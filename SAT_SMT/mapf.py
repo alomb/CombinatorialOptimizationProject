@@ -37,41 +37,46 @@ pass_ = Function('pass', IntSort(), IntSort(), IntSort(), IntSort(), BoolSort())
 # Set of variables
 # ======================================================================================================================
 
-A_size = 2
-V_size = 3
-E_size = 4
-T_size = 2
-
-# Time steps
+# Graph
 # ----------------------------------------------------------------------------------------------------------------------
 
-
-# Edges
-# ----------------------------------------------------------------------------------------------------------------------
-
-Edges = [{0, 1}, {1, 0}, {2}]
+edges = [{0, 1}, {1, 0}, {2}]
+V_size = len(edges)
 E = []
 
-for index, neighbors in enumerate(Edges):
+for index, neighbors in enumerate(edges):
     for neighbor in neighbors:
         E.append(arc_(index, neighbor))
 
-# Time steps
+E_size = len(E)
+
+# Time steps (from 0 to T_size - 1)
 # ----------------------------------------------------------------------------------------------------------------------
 
-# Agents
+T_size = 2
+
+# Agents (from 0 to A_size - 1)
 # ----------------------------------------------------------------------------------------------------------------------
 
+A_size = 2
 
-# Sum of the at(v, a, t) functional symbols for every time step, agent and vertex
+# Summations using at
 # ----------------------------------------------------------------------------------------------------------------------
 
 # Sum over vertices (SV)
+# The presence of a specific agent, in a specific time is mapped to:
+# 1 if there is a true at()
+# 0 otherwise
 
 SV_temp = [[[If(at_(vertex, agent, time), 1, 0)
              for vertex in range(V_size)]
             for time in range(T_size)]
            for agent in range(A_size)]
+
+"""
+SV sums the values of SV_temp, obtaining the number of vertices occupied in a specific time and by a specific agent. 
+It is used in constraint (3) to avoid that in each time step, the agent occupies more than one position.
+"""
 
 SV = [[sum(SV_temp[agent][time])
        for time in range(T_size)]
@@ -86,19 +91,33 @@ SA_temp = [[[If(at_(vertex, agent, time), 1, 0)
             for time in range(T_size)]
            for vertex in range(V_size)]
 
+"""
+SA sums the values of SA_temp, obtaining the number of agents occupying in a specific time a specific vertex. 
+It is used in constraint (4) to avoid that in each time step, the vertex is occupied by more than one agent.
+"""
+
 SA = [[sum(SA_temp[vertex][time])
        for time in range(T_size)]
       for vertex in range(V_size)]
 
 SA = [element for sublist in SA for element in sublist]
 
-# Sum of the pass(x, y, a, t) functional symbols for every time step, agent and arc
+# Summations using pass
 # ----------------------------------------------------------------------------------------------------------------------
 
-SE_temp = [[[list(map(lambda n: If(pass_(vertex, n, agent, time), 1, 0), Edges[vertex]))
+# Each neighbor of a certain vertex, in a specific time for a specific agent is mapped to:
+# 1 if there is a true pass() between it and the vertex set of neighbors
+# 0 otherwise
+SE_temp = [[[list(map(lambda n: If(pass_(vertex, n, agent, time), 1, 0), edges[vertex]))
              for vertex in range(V_size)]
             for time in range(T_size)]
            for agent in range(A_size)]
+
+"""
+SE sums the values of SE_temp, obtaining the number of movements from the vertex to its neighbors, in a specific time, 
+for a specific agent. It is used in constraint (5) to avoid that in each time step, the agent at a certain position 
+moves to a not allowed vertex or to more than one neighbor.
+"""
 
 SE = [[[sum(SE_temp[agent][time][vertex])
         for vertex in range(V_size)]
@@ -109,12 +128,27 @@ SE = [[[sum(SE_temp[agent][time][vertex])
 # Constraints
 # ======================================================================================================================
 
+# vertex
 x = Int('x')
 y = Int('y')
+# agent
 a = Int('a')
+# time step
 t = Int('t')
 
 s = Solver()
+
+# Start position (1)
+s.add([ForAll([a],
+              Implies(
+                  And(a >= 0, a < A_size), at_(orig_(a), a, 0))
+              )])
+
+# Final position (2)
+s.add([ForAll([a],
+              Implies(
+                  And(a >= 0, a < A_size), at_(dest_(a), a, T_size - 1))
+              )])
 
 # Each agent occupies at most one node (3)
 s.add([sv <= 1 for sv in SV])
@@ -124,15 +158,27 @@ s.add([sa <= 1 for sa in SA])
 
 # If an agent is in a node it needs to leave by one of the outgoing arcs (5)
 s.add([Implies(at_(vertex, agent, time), SE[agent][time][vertex] == 1)
-      for vertex in range(V_size)
-      for time in range(T_size)
-      for agent in range(A_size)])
+       for vertex in range(V_size)
+       for time in range(T_size)
+       for agent in range(A_size)])
 
+# If an agent is using an arc, it needs to arrive at the corresponding node in the next time step (6)
+s.add([ForAll([x, y, a, t],
+              Implies(
+                  And(x >= 0, x < V_size, y >= 0, y < V_size, t >= 0, t < T_size - 1, a >= 0, a < A_size, arc_(x, y)),
+                  Implies(
+                      pass_(x, y, a, t),
+                      at_(y, a, t + 1)
+                  )
+              ))])
+
+# Two agents can't occupy two opposite arcs at the same time (no-swap constraint) (7)
+
+# TODO
+
+# Instance constraints
 s.add(
-    # Graph
-    E +
-
-    [
+    E + [
         # Agent 0
         orig_(0) == 0,
         dest_(0) == 0,
@@ -144,39 +190,10 @@ s.add(
         orig_(1) == 1,
         dest_(1) == 1,
         at_(orig_(1), 1, 0),
-        # TODO: Check if necessary
-        # at_(V[0], A[1], T[0]) == False,
-
-        # Start position (1)
-        ForAll([a], Implies(
-            And(a >= 0, a < A_size), at_(orig_(a), a, 0))),
-
-        # Final position (2)
-        ForAll([a], Implies(
-            And(a >= 0, a < A_size), at_(dest_(a), a, T_size - 1))),
-
-        # Each agent occupies at most one node (3)
-        # ForAll(x, Implies(And(x >= 0, x < V_size), SVZ3[x] <= 1)),
-
-        # Every node is occupied by at most one agent (4)
-        # ForAll(a, Implies(And(a >= 0, a < A_size), SAZ3[a] <= 1)),
-
-        # If an agent is using an arc, it needs to arrive at the corresponding node in the next time step (6)
-        ForAll([x, y, a, t], Implies(
-            And(x >= 0, x < V_size, y >= 0, y < V_size, t >= 0, t < T_size - 1, a >= 0, a < A_size, arc_(x, y)),
-            Implies(
-                pass_(x, y, a, t),
-                at_(y, a, t + 1)
-            )
-        )),
-
-        # Two agents can't occupy two opposite arcs at the same time (no-swap constraint) (7)
-
-        # TODO
     ]
 )
 
-print(s.check())
-print(s.model())
+if s.check() == sat:
+    print(s.model())
 
 # ----------------------------------------------------------------------------------------------------------------------
