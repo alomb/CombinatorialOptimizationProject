@@ -43,7 +43,7 @@ pass_ = Function('pass', IntSort(), IntSort(), IntSort(), IntSort(), BoolSort())
 # ----------------------------------------------------------------------------------------------------------------------
 
 # List of neighbors, agents are represented by the index
-edges = [{0, 1}, {0, 2, 1}, {1, 3, 2}, {2, 3}]
+edges = [{0, 1}, {0, 2, 1}, {1, 3, 2, 4}, {2, 3, 5}, {2, 4}, {3, 5}]
 V_size = len(edges)
 # Edges constraints
 E = []
@@ -55,14 +55,14 @@ for index, neighbors in enumerate(edges):
 # Time steps (from 0 to T_size - 1)
 # ----------------------------------------------------------------------------------------------------------------------
 
-T = 2
+T = 6
 assert T >= 1
 
 # Agents (from 0 to A_size - 1)
 # ----------------------------------------------------------------------------------------------------------------------
 
-agents = [(0, 0), (1, 3)]
-#agents = [(0, 2), (3, 3)]
+agents = [(0, 2), (2, 3), (3, 0)]  # T = 6
+# agents = [(0, 3), (3, 0)]  # T = 5
 A_size = len(agents)
 # Agent constraints
 A = []
@@ -133,6 +133,25 @@ sum5 = [[[sum(sum5_tmp[agent][time][vertex])
          for time in range(T)]
         for agent in range(A_size)]
 
+"""
+# Each agent is mapped to the sum of pass() on both vertices of certain arc, in a specific time
+sum7_tmp = [[[[If(pass_(vertex, neighbor, agent, time), 1, 0) + If(pass_(neighbor, vertex, agent, time), 1, 0)
+               for agent in range(A_size)]
+              for time in range(T)]
+             for neighbor in edges[vertex]]
+            for vertex in range(V_size)]
+"""
+"""
+sum7 sums the values of sum7_tmp over the agents, obtaining the number of movements at a specific time step on both 
+directions of a certain arc. It is used in constraint (7) to avoid that in each time step, agents swap their positions.
+"""
+"""
+sum7 = [[[sum(sum7_tmp[vertex][neighbor][time])
+          for time in range(T)]
+         for neighbor in range(len(edges[vertex]))]
+        for vertex in range(V_size)]
+"""
+
 # ======================================================================================================================
 # Constraints
 # ======================================================================================================================
@@ -146,6 +165,15 @@ a = Int('a')
 t = Int('t')
 
 s = Solver()
+
+# TODO: From the paper, it seems to not deal correctly arcs from and to the same vertex
+"""
+# Two agents can't occupy two opposite arcs at the same time (no-swap constraint) (7)
+s.add([sum7[vertex][neighbor][time] <= 1
+       for vertex in range(V_size)
+       for time in range(T)
+       for neighbor in range(len(edges[vertex]))])
+"""
 
 # Start position (1)
 s.add([ForAll([a],
@@ -180,16 +208,23 @@ s.add([ForAll([x, y, a, t],
                   at_(y, a, t + 1)
               ))])
 
-# Instance constraints
-s.add(
-    E + A + [
-        # Agent 0
-        # pass_(orig_(0), orig_(0), 0, 0),
+# Two agents can't occupy two opposite arcs at the same time (no-swap constraint) (7)
+s.add([
+    Implies(
+        agent1 != agent2,
+        And(
+            Not(And(pass_(vertex, neighbor, agent1, time), pass_(neighbor, vertex, agent2, time))),
+            Not(And(pass_(vertex, neighbor, agent2, time), pass_(neighbor, vertex, agent1, time)))
+        )
+    )
+    for agent2 in range(A_size)
+    for agent1 in range(A_size)
+    for vertex in range(V_size)
+    for time in range(T)
+    for neighbor in edges[vertex]])
 
-        # Agent 1
-        # pass_(orig_(1), orig_(1), 1, 0),
-    ]
-)
+# Instance constraints
+s.add(E + A)
 
 sep = "============================="
 print(sep + "\nAssertions:")
