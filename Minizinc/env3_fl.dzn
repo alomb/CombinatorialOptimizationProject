@@ -1,0 +1,32 @@
+nodes_size = 4;
+a = array3d(1..nodes_size, 1..4, 1..4,
+[
+2,4,1,1,forward
+2,1,3,3,forward
+2,3,1,4,left
+]
+
+[
+  % Cell 1
+  % right    down      left      up
+  2,0,0,0,  0,0,0,0,  2,0,0,0,  0,0,0,0,
+  
+  % Cell 2
+  % right    down      left      up
+  4,0,0,3,  0,0,0,0,  0,0,1,0,  0,0,0,0,
+  
+  % Cell 3
+  % right    down      left      up
+  0,0,0,0,  0,0,0,0,  0,0,0,0,  0,0,2,0,
+  
+  % Cell 4
+  % right    down      left      up
+  2,0,0,0,  0,0,0,0,  2,0,0,0,  0,0,0,0,
+  
+]);
+agents_size = 2;
+agents = [|1,2|2,3|];
+maximum_time = 3;
+
+ 3
+124
