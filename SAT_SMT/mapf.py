@@ -45,8 +45,8 @@ pass_ = Function('pass', IntSort(), IntSort(), IntSort(), IntSort(), BoolSort())
 
 # List of neighbors, agents are represented by the index
 
-#  4
-#01235
+#   4
+# 01235
 edges = [OrderedDict([(0, None), (1, None)]),
          OrderedDict([(0, None), (1, None), (2, None)]),
          OrderedDict([(1, None), (2, None), (3, None), (4, None)]),
@@ -177,19 +177,14 @@ t = Int('t')
 
 s = Solver()
 
+# Agent variable constraint
+s.add([And(a >= 0, a < A_size)])
+
 # Start position (1)
-s.add([ForAll([a],
-              Implies(
-                  And(a >= 0, a < A_size),
-                  at_(orig_(a), a, 0))
-              )])
+s.add([ForAll([a], at_(orig_(a), a, 0))])
 
 # Final position (2)
-s.add([ForAll([a],
-              Implies(
-                  And(a >= 0, a < A_size),
-                  at_(dest_(a), a, T))
-              )])
+s.add([ForAll([a], at_(dest_(a), a, T))])
 
 # Each agent occupies at most one node (3)
 s.add([vertex <= 1 for vertex in sum3])
@@ -206,7 +201,7 @@ s.add([Implies(at_(vertex, agent, time), sum5[agent][time][vertex] == 1)
 # If an agent is using an arc, it needs to arrive at the corresponding node in the next time step (6)
 s.add([ForAll([x, y, a, t],
               Implies(
-                  And(x >= 0, x < V_size, y >= 0, y < V_size, t >= 0, t <= T - 1, a >= 0, a < A_size, arc_(x, y), pass_(x, y, a, t)),
+                  And(x >= 0, x < V_size, y >= 0, y < V_size, t >= 0, t <= T - 1, arc_(x, y), pass_(x, y, a, t)),
                   at_(y, a, t + 1)
               ))])
 
