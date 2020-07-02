@@ -47,6 +47,8 @@ pass_ = Function('pass', IntSort(), IntSort(), IntSort(), IntSort(), BoolSort())
 
 #   4
 # 01235
+
+# Use OrderDict to avoid using sets that may change order each time edges is called to retrieve neighbors
 edges = [OrderedDict([(0, None), (1, None)]),
          OrderedDict([(0, None), (1, None), (2, None)]),
          OrderedDict([(1, None), (2, None), (3, None), (4, None)]),

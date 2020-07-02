@@ -73,3 +73,9 @@ Nout = [[[interval_var(start=(0, upper_bound), end=(0, upper_bound), name="Nout%
 # model.add(alternative(Nin[0][0][0], [N[0][0][0], N[1][1][0]]))
 
 # model.add(no_overlap([Nin[0][0][0], Nin[1][0][0], N[1][0][0], N[1][1][0]]))
+
+# More than one agent cannot occur at the same node at the same time (15)
+[no_overlap([N[vertex][agent][layer]
+             for agent in range(agents_len)
+             for layer in range(num_layers)])
+ for vertex in range(edges_len)]
