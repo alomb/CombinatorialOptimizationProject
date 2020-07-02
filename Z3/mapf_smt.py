@@ -37,7 +37,7 @@ at_ = Function('at', IntSort(), IntSort(), IntSort(), BoolSort())
 pass_ = Function('pass', IntSort(), IntSort(), IntSort(), IntSort(), BoolSort())
 
 # ======================================================================================================================
-# Set of variables
+# Variables and constants
 # ======================================================================================================================
 
 # Graph
