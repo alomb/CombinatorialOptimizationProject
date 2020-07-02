@@ -70,4 +70,15 @@ We now introduce constraints on these variables:
 \end{description}
 
 The correct movements inside the graph are guided by the costraints $(5)-(7)$, nevertheless it is not necessary to specify that each agent must make one and only on movement at a given instant $t$ because the spurious movements introduced by the costraint $(7)$ they will never be performed thanks to $(5)$.
+
+\section{CP-based approach}
+
+A MAPF problem can also be formalized as a scheduling problem. The presence of an agent in a node can be seen as the activity and these can be represented as interval variables that begin and finish in a certain moment represented by the predicates $StartOf$ and $EndOf$ while the difference between the end time and the start time of the activity can be set using a predicate $LengthOf$. We also used the $PresenceOf$ predicate to determine if a certain activity is present in the resulting schedule which can be seen as a sequence of activities. In order to allow each agent to be able to visit the same node several times we developed a multi-layer model  base on the copy of the original graph with some additional arcs that allow the transition between the two graphs. Let $l$ the number of layers this means that each agent can visit the same node at most $l$ times.
+$\forall a \in A, \forall x \in V, \forall k \in {0,...,l-1}$ we considered the following optional activities:
+\begin{itemize}
+\item $N[x,a,k]$ corresponds to the time of an agent $a$ spent at node $x$ when the activity starts at layer $k$.
+\item $N^{in}[x,a,k]$ describes the time spent in the incoming arc at layer $k$.
+\item $N^{out}[x,a,k]$ describes the time spent in the outgoing arc at layer $k$.
+\end{itemize}
+
 \end{document}
