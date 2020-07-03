@@ -4,7 +4,6 @@ channels:
 dependencies:
   - _libgcc_mutex=0.1=main
   - ca-certificates=2020.6.24=0
-  - certifi=2020.6.20=py37_0
   - ld_impl_linux-64=2.33.1=h53a641e_7
   - libedit=3.1.20191231=h7b6447c_0
   - libffi=3.3=he6710b0_1
@@ -22,12 +21,23 @@ dependencies:
   - xz=5.2.5=h7b6447c_0
   - zlib=1.2.11=h7b6447c_3
   - pip:
+    - certifi==2019.9.11
     - chardet==3.0.4
+    - cplex==12.10.0.0
+    - cycler==0.10.0
+    - decorator==4.4.2
+    - docloud==1.0.375
     - docplex==2.14.186
     - idna==2.10
-    - requests==2.24.0
-    - six==1.15.0
-    - urllib3==1.25.9
+    - kiwisolver==1.2.0
+    - matplotlib==3.2.2
+    - networkx==2.4
+    - numpy==1.19.0
+    - pyparsing==2.4.7
+    - python-dateutil==2.8.1
+    - requests==2.22.0
+    - six==1.12.0
+    - urllib3==1.25.6
     - z3-solver==4.8.8.0
 prefix: /home/alessandro/anaconda3/envs/mapf
 
