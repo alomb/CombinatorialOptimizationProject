@@ -28,5 +28,3 @@ for node, neighbors in G.adj.items():
 # Draw
 nx.draw(G, with_labels=True)
 plt.show()
-
-

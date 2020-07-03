@@ -73,7 +73,7 @@ assert T >= 0
 # Agents (from 0 to A_size - 1)
 # ----------------------------------------------------------------------------------------------------------------------
 
-agents = [(1, 3), (4, 4)]  # T = 2
+agents = [(0, 1), (1, 2)]  # T = 2
 # agents = [(0, 2), (2, 3), (3, 0)]  # T = 6
 # agents = [(0, 3), (3, 0)]  # T = 5
 A_size = len(agents)
@@ -182,25 +182,25 @@ s = Solver()
 # Agent variable constraint
 s.add([And(a >= 0, a < A_size)])
 
-# Start position (1)
+# (1) Start position
 s.add([ForAll([a], at_(orig_(a), a, 0))])
 
-# Final position (2)
+# (2) Final position
 s.add([ForAll([a], at_(dest_(a), a, T))])
 
-# Each agent occupies at most one node (3)
+# (3) Each agent occupies at most one node
 s.add([vertex <= 1 for vertex in sum3])
 
-# Every vertex is occupied by at most one agent (4)
+# (4) Every vertex is occupied by at most one agent
 s.add([agent <= 1 for agent in sum4])
 
-# If an agent is in a node it needs to leave by one of the outgoing arcs (5)
+# (5) If an agent is in a node it needs to leave by one of the outgoing arcs
 s.add([Implies(at_(vertex, agent, time), sum5[agent][time][vertex] == 1)
        for vertex in range(V_size)
        for time in range(T)
        for agent in range(A_size)])
 
-# If an agent is using an arc, it needs to arrive at the corresponding node in the next time step (6)
+# (6) If an agent is using an arc, it needs to arrive at the corresponding node in the next time step
 s.add([ForAll([x, y, a, t],
               Implies(
                   And(x >= 0, x < V_size, y >= 0, y < V_size, t >= 0, t <= T - 1, arc_(x, y), pass_(x, y, a, t)),
@@ -208,7 +208,7 @@ s.add([ForAll([x, y, a, t],
               ))])
 
 """
-# Two agents can't occupy two opposite arcs at the same time (no-swap constraint) (Alternative version of 7)
+# (Alternative 7) Two agents can't occupy two opposite arcs at the same time (no-swap constraint)
 s.add([
     Implies(
         agent1 != agent2,
@@ -224,7 +224,7 @@ s.add([
     for neighbor in edges[vertex]])
 """
 
-# Two agents can't occupy two opposite arcs at the same time (no-swap constraint) (7)
+# (7) Two agents can't occupy two opposite arcs at the same time (no-swap constraint)
 s.add([sum7[vertex][neighbor][time] <= 1
        for vertex in range(V_size)
        for time in range(T)
