@@ -166,13 +166,29 @@ A_equal = [[[[interval_var(start=(0, upper_bound), end=(0, upper_bound), length=
  for agent, pair in enumerate(agents)
  for vertex in range(edges_len)]
 
-"""
 # TDM
+
+"""
 tm_size = edges_len * num_layers * agents_len
 tm = transition_matrix(tm_size)
 for i in range(tm_size):
     for j in range(tm_size):
-        tm.set_value(i, j, 1)
+        tm.set_value(i, j, 1)     
+"""
+
+"""
+matrix = []
+
+for vertex in range(edges_len):
+    for layer in range(num_layers):
+        tm = transition_matrix(agents_len * agents_len)
+        for agent1 in range(agents_len):
+            for agent2 in range(agents_len):
+                if agent1 == agent2:
+                    tm.set_value(agent1, agent2, 0)
+                else:
+                    tm.set_value(agent1, agent2, 1)
+        
 
 # (17) Prevent agents to occur at the same node at the same time
 [model.add(no_overlap(sequence_var([N[vertex][agent][layer]
@@ -188,6 +204,7 @@ for i in range(tm_size):
  for layer in range(num_layers)
  for agent1 in range(agents_len)
  for agent2 in range(agents_len)]
+
 
 # (18) Prevent agents from using an arc at the same time (no-swap constraint)
 [model.add(no_overlap([element for sublist in [[A[vertex][neighbor][agent][layer], A[neighbor][vertex][agent][layer]]

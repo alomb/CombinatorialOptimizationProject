@@ -9,7 +9,7 @@ Multi-Agent Pathfinding (MAPF) is a problem with practical implications in sever
 \end{abstract}
 
 \section{Introduction}
-Formally we can define an instance of MAPF as ordered 4-tuple ($G, A,$ $origin, destination$) where $G = (V, E)$ is a directed graph and $A$ is a set of agents. Functions $origin$: A\textrightarrow V and $destination$: A\textrightarrow V describe origin and destination nodes of an agent. $\forall a\in A$ we denote $origin(a)\in V$ the origin location (node) of the agent and $destination(a)\in V$ its destination node  [1] . Each agent has a start position and a goal position. MAPF solvers use the notion of conflicts to find a solution during planning, where a MAPF solution is called valid iff there is no conflict between any two single-agent plans. The main assumptions are:
+Formally we can define an instance of MAPF as ordered 4-tuple ($G, A,$ $origin, destination$) where $G = (V, E)$ is a directed graph and $A$ is a set of agents. Functions $origin$: A\textrightarrow V and $destination$: A\textrightarrow V describe origin and destination nodes of an agent. $\forall a\in A$ we denote $origin(a)\in V$ the origin location (node) of the agent and $destination(a)\in V$ its destination node. Each agent has a start position and a goal position. MAPF solvers use the notion of conflicts to find a solution during planning, where a MAPF solution is called valid iff there is no conflict between any two single-agent plans. The main assumptions are:
 
 \begin{itemize} 
 \item Two agents cannot be found at the same node at the same time.
@@ -17,7 +17,7 @@ Formally we can define an instance of MAPF as ordered 4-tuple ($G, A,$ $origin, 
 \item The moves of the agents are discrete and synchronous.
 \end{itemize}
 
-The task is to return a set of actions for each agent, that will move each of the agents to its goal without conflicting with other agents while minimizing a cumulative cost function [2]. The two main approaches to solve a MAPF problems are:
+The task is to return a set of actions for each agent, that will move each of the agents to its goal without conflicting with other agents while minimizing a cumulative cost function. The two main approaches to solve a MAPF problems are:
 
 \begin{itemize}
 \item Reduction-based solvers. This type of approach is based on solvers that reduce the problem to a known one, for example SAT or Integer linear programming, and it is particularly efficient in the case of unit cost per move. 
@@ -79,6 +79,22 @@ $\forall a \in A, \forall x \in V, \forall k \in {0,...,l-1}$ we considered the 
 \item $N[x,a,k]$ corresponds to the time of an agent $a$ spent at node $x$ when the activity starts at layer $k$.
 \item $N^{in}[x,a,k]$ describes the time spent in the incoming arc at layer $k$.
 \item $N^{out}[x,a,k]$ describes the time spent in the outgoing arc at layer $k$.
+\item $A[x,y,a,k]$ where $k \in {0,...,l-1}$ which corresponds to transiting an agent $a$ from a node $x$ to the node $y$ at layer $k+1$.
+\item $A[x,x,a,k]$ where $k \in {0,...,l-2}$ which corresponds to transiting an agent $a$ from a node $x$ to the node $x$ at layer $k+1$.
 \end{itemize}
+
+We created two different variables to represent $A[x,y,a,k]$ and $A[x,x,a,k]$ to simplify the implementation of constraints. The duration of the activity $A[x,x,a,k]$ is set to 0 because it is only a transition to another layer. 
+We now introduce constraints on these variables:
+
+\begin{description}
+\item [C1] \begin{equation} PresenceOf(N[orig(a),a,0]) = 1 \end{equation}
+\item [C2] \begin{equation} PresenceOf(N[dest(a),a,l-1]) = 1 \end{equation}
+\item [C3] \begin{equation} PresenceOf(N^{in}[orig(a),a,0]) = 0 \end{equation}
+\item [C4] \begin{equation} PresenceOf(N^{out}[dest(a),a,l-1]) = 0 \end{equation}
+\item [C4] \begin{equation}\begin{split} \forall x \in V, \forall k \in {0,...,l-1}, x \neq orig(a) \lor k \neq 0: \\ PresenceOf(N[x,a,k]) \iff PresenceOf(N^{in}[x,a,k]) \end{split}\end{equation} 
+\item [C5] \begin{equation}\begin{split} \forall x \in V, \forall k \in {0,...,l-1}, x \neq dest(a) \lor k \neq l-1: \\ PresenceOf(N[x,a,k]) \iff PresenceOf(N^{out}[x,a,k]) \end{split}\end{equation}
+
+
+\end{description}
 
 \end{document}
