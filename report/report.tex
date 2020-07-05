@@ -18,9 +18,9 @@ In this work we will focus on SAT and CP-based approaches following the paper of
 As the authors suggest, this type of problem lends itself particularly well to be formalized using a compact set of constraints and we found interesting to developed as the course project.
 \end{abstract}
 
-\section{Introduction}\label{sec:introduction}
+\section*{Introduction}\label{sec:introduction}
 Formally we can define an instance of MAPF as ordered 4-tuple ($G, A,$ $origin, destination$) where $G = (V, E)$ is a directed graph and $A$ is a set of agents.
-Functional symbols $origin$: A\textrightarrow V and $destination$: A\textrightarrow V describe origin and destination nodes of an agent. $\forall a\in A$ we denote $origin(a)\in V$ the origin location (node) of the agent and $destination(a)\in V$ its destination node [1].
+Functional symbols $origin$: A\textrightarrow V and $destination$: A\textrightarrow V describe origin and destination nodes of an agent. $\forall a\in A$ we denote $origin(a)\in V$ the origin location (node) of the agent and $destination(a)\in V$ its destination node.
 Each agent has a start position and a goal position.
 MAPF solvers use the notion of conflicts to find a solution during planning, where a MAPF solution is called valid iff there is no conflict between any two single-agent plans.
 The main assumptions are:
@@ -31,7 +31,7 @@ The main assumptions are:
 \item The moves of the agents are discrete and synchronous.
 \end{itemize}
 
-The task is to return a set of actions for each agent, that will move each of the agents to its goal without conflicting with other agents while minimizing a cumulative cost function [2].
+The task is to return a set of actions for each agent, that will move each of the agents to its goal without conflicting with other agents while minimizing a cumulative cost function.
 The two main approaches to solve a MAPF problems are:
 
 \begin{itemize}
@@ -53,49 +53,49 @@ For this purpose we begin by describing the variables that we used:
 
 We now introduce constraints on these variables:
 
-\begin{description}
+\begin{description}\label{equation_set_1}
 \item All agents must be in their initial position at time $t = 0$:
 \begin{equation}
 \forall a \in A: At(origin(a), a, 0) = 1
-\label{eq:c1}\end{equation}
+\label{eq:1.1}\end{equation}
 
 \item All agents must be in their goal position at time $t = T$:
 \begin{equation}
 \forall a \in A : At(dest(a), a, T) = 1
-\label{eq:c2}\end{equation}
+\label{eq:1.2}\end{equation}
 
 \item All agents can be in one node in every moment:
 \begin{equation}
 \forall a \in A, \forall t \in {0,...,T}: \displaystyle\sum_{x \in V}At(x,a,t)\leq1
-\label{eq:c3}\end{equation}
+\label{eq:1.3}\end{equation}
 
 \item Every vertex must be occupied at most by an agent in every moment:
 \begin{equation}\begin{split}
 \forall x \in V, \forall a \in A, \forall t \in {0,...,T-1}: At(x, a, t) \\ 
 \Rightarrow \displaystyle\sum_{a \in A}At(x,a,t)\leq1
-\end{split}\label{eq:c4}\end{equation}
+\end{split}\label{eq:1.4}\end{equation}
 
 \item If an agent is in a node it needs to leave by one of the outgoing arcs:
 \begin{equation}\begin{split}
 \forall x \in V, \forall a \in A, \forall t \in {0,..,T-1}: At(x,a,t) \\
 \Rightarrow  \displaystyle\sum_{(x,y) \in E}Pass(x,y,a,t)=1
-\end{split}\label{eq:c5}\end{equation}
+\end{split}\label{eq:1.5}\end{equation}
 
 \item If an agent is using an arc, it needs to arrive at the corresponding node in the next time step
 \begin{equation}\begin{split}
 \forall (x,y) \in E, \forall a \in A, \forall t \in {0,...,T-1}: Pass(x,y,a,t) \\
 \Rightarrow At(y,a,t+1)
-\end{split}\label{eq:c6}
+\end{split}\label{eq:1.6}
 \end{equation}
 
 \item Two agents cannot exchange positions:
 \begin{equation}\begin{split}
 \forall (x,y) \in E, \forall t \in {0,...,T-1}: \\
 \displaystyle\sum_{a \in A, x \neq y}Pass(x,y,a,t) + Pass(y,x,a,t) \leq 1
-\end{split}\label{eq:c7}\end{equation}
+\end{split}\label{eq:1.7}\end{equation}
 \end{description}
 
-The correct movements inside the graph are guided by the costraints~\ref{eq:c5}-\ref{eq:c7}, nevertheless it is not necessary to specify that each agent must make one and only on movement at a given instant $t$ because the spurious movements introduced by the constraint~\ref{eq:c7} they will never be performed thanks to~\ref{eq:c5}.
+The correct movements inside the graph are guided by the costraints~\ref{eq:1.5}-\ref{eq:1.7}, nevertheless it is not necessary to specify that each agent must make one and only on movement at a given instant $t$ because the spurious movements introduced by the constraint~\ref{eq:1.7} they will never be performed thanks to~\ref{eq:1.5}.
 
 \section{CP-based approach}\label{sec:cp-based-approach}
 
@@ -110,6 +110,21 @@ $\forall a \in A, \forall x \in V, \forall k \in {0,...,l-1}$ we considered the 
 \item $N[x,a,k]$ corresponds to the time of an agent $a$ spent at node $x$ when the activity starts at layer $k$.
 \item $N^{in}[x,a,k]$ describes the time spent in the incoming arc at layer $k$.
 \item $N^{out}[x,a,k]$ describes the time spent in the outgoing arc at layer $k$.
+\item $A[x,y,a,k]$ where $k \in {0,...,l-1}$ which corresponds to transiting an agent $a$ from a node $x$ to the node $y$ at layer $k+1$.
+\item $A[x,x,a,k]$ where $k \in {0,...,l-2}$ which corresponds to transiting an agent $a$ from a node $x$ to the node $x$ at layer $k+1$.
 \end{itemize}
+
+We created two different variables to represent $A[x,y,a,k]$ and $A[x,x,a,k]$ to simplify the implementation of constraints.
+The duration of the activity $A[x,x,a,k]$ is set to 0 because it is only a transition to another layer.
+We now introduce constraints on these variables:
+
+\begin{description}\label{eq:equation_set_2}
+\item \begin{equation} PresenceOf(N[orig(a),a,0]) = 1 \label{eq:2.1}\end{equation}
+\item \begin{equation} PresenceOf(N[dest(a),a,l-1]) = 1 \label{eq:2.2}\end{equation}
+\item \begin{equation} PresenceOf(N^{in}[orig(a),a,0]) = 0 \label{eq:2.3}\end{equation}
+\item \begin{equation} PresenceOf(N^{out}[dest(a),a,l-1]) = 0 \label{eq:2.4}\end{equation}
+\item \begin{equation}\begin{split} \forall x \in V, \forall k \in {0,...,l-1}, x \neq orig(a) \lor k \neq 0: \\ PresenceOf(N[x,a,k]) \iff PresenceOf(N^{in}[x,a,k]) \end{split}\label{eq:2.5}\end{equation}
+\item \begin{equation}\begin{split} \forall x \in V, \forall k \in {0,...,l-1}, x \neq dest(a) \lor k \neq l-1: \\ PresenceOf(N[x,a,k]) \iff PresenceOf(N^{out}[x,a,k]) \end{split}\label{eq:2.6}\end{equation}
+\end{description}
 
 \end{document}
