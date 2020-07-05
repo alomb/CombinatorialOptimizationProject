@@ -38,11 +38,13 @@ pass_ = Function('pass', IntSort(), IntSort(), IntSort(), IntSort(), BoolSort())
 
 def run(edges, agents, makespan):
     """
-        Create the model and tries to solve it.
+    Create the model and tries to solve it.
 
-        edges: list of OrderedDict containing for each agent (whose identifier is the index of this list) its neighbors
-        agents: list of tuples containing origins and destinations
-        makespan: the minimal time step that satisfies the problem
+    :param edges: list of OrderedDict containing for each agent (whose identifier is the index of this list) its
+    neighbors
+    :param agents: list of tuples containing origins and destinations
+    :param makespan: the minimal time step that satisfies the problem
+    :return True when a plan has been found
     """
     # TODO: verbosity control
 
@@ -89,8 +91,8 @@ def run(edges, agents, makespan):
                 for agent in range(agents_len)]
 
     """
-        sum3 sums the values of sum3_tmp, obtaining the number of vertices occupied in a specific time and by a specific 
-        agent. It is used in constraint (3) to avoid that in each time step, the agent occupies more than one position.
+    sum3 sums the values of sum3_tmp, obtaining the number of vertices occupied in a specific time and by a specific 
+    agent. It is used in constraint (3) to avoid that in each time step, the agent occupies more than one position.
     """
 
     sum3 = [[sum(sum3_tmp[agent][time])
@@ -105,8 +107,8 @@ def run(edges, agents, makespan):
                 for vertex in range(edges_len)]
 
     """
-        sum4 sums the values of sum4_tmp, obtaining the number of agents occupying in a specific time a specific vertex. 
-        It is used in constraint (4) to avoid that in each time step, the vertex is occupied by more than one agent.
+    sum4 sums the values of sum4_tmp, obtaining the number of agents occupying in a specific time a specific vertex. 
+    It is used in constraint (4) to avoid that in each time step, the vertex is occupied by more than one agent.
     """
 
     sum4 = [[sum(sum4_tmp[vertex][time])
@@ -127,9 +129,9 @@ def run(edges, agents, makespan):
                 for agent in range(agents_len)]
 
     """
-        sum5 sums the values of sum5_tmp, obtaining the number of movements from the vertex to its neighbors, in a 
-        specific time, for a specific agent. It is used in constraint (5) to avoid that in each time step, the agent at 
-        a certain position moves to a not allowed vertex or to more than one neighbor.
+    sum5 sums the values of sum5_tmp, obtaining the number of movements from the vertex to its neighbors, in a 
+    specific time, for a specific agent. It is used in constraint (5) to avoid that in each time step, the agent at 
+    a certain position moves to a not allowed vertex or to more than one neighbor.
     """
 
     sum5 = [[[sum(sum5_tmp[agent][time][vertex])
@@ -146,9 +148,9 @@ def run(edges, agents, makespan):
                 for vertex in range(edges_len)]
 
     """
-        sum7 sums the values of sum7_tmp over the agents, obtaining the number of movements at a specific time step on 
-        both directions of a certain arc. It is used in constraint (7) to avoid that in each time step, agents swap 
-        their positions.
+    sum7 sums the values of sum7_tmp over the agents, obtaining the number of movements at a specific time step on 
+    both directions of a certain arc. It is used in constraint (7) to avoid that in each time step, agents swap 
+    their positions.
     """
 
     sum7 = [[[sum(sum7_tmp[vertex][neighbor][time])
