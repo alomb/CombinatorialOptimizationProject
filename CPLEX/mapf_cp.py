@@ -1,4 +1,5 @@
 from docplex.cp.model import *
+import re
 
 model = CpoModel()
 
@@ -23,32 +24,32 @@ upper_bound = 20
 makespan = integer_var(0, upper_bound, name="MKSP")
 
 N = [[[interval_var(start=(0, upper_bound), end=(0, upper_bound),
-                    name="N%s_%s_%s" % (vertex, agent, layer), optional=True)
+                    name="N_%s_%s_%s" % (vertex, agent, layer), optional=True)
        for layer in range(num_layers)]
       for agent in range(agents_len)]
      for vertex in range(edges_len)]
 
 Nin = [[[interval_var(start=(0, upper_bound), end=(0, upper_bound),
-                      name="Nin%s_%s_%s" % (vertex, agent, layer), optional=True)
+                      name="Nin_%s_%s_%s" % (vertex, agent, layer), optional=True)
          for layer in range(num_layers)]
         for agent in range(agents_len)]
        for vertex in range(edges_len)]
 
 Nout = [[[interval_var(start=(0, upper_bound), end=(0, upper_bound),
-                       name="Nout%s_%s_%s" % (vertex, agent, layer), optional=True)
+                       name="Nout_%s_%s_%s" % (vertex, agent, layer), optional=True)
           for layer in range(num_layers)]
          for agent in range(agents_len)]
         for vertex in range(edges_len)]
 
 A = [dict((neighbor, [[interval_var(start=(0, upper_bound), end=(0, upper_bound), length=1,
-                                    name="A%s_%s_%s_%s" % (vertex, neighbor, agent, layer), optional=True)
+                                    name="A_%s_%s_%s_%s" % (vertex, neighbor, agent, layer), optional=True)
                        for layer in range(num_layers)]
                       for agent in range(agents_len)])
           for neighbor in edges[vertex] if vertex != neighbor)
      for vertex in range(edges_len)]
 
 A_equal = [[[[interval_var(start=(0, upper_bound), end=(0, upper_bound), length=0,
-                           name="Ae%s_%s_%s_%s" % (vertex, neighbor, agent, layer), optional=True)
+                           name="Ae_%s_%s_%s_%s" % (vertex, neighbor, agent, layer), optional=True)
               for layer in range(num_layers - 1)]
              for agent in range(agents_len)]
             for neighbor in edges[vertex] if vertex == neighbor]
@@ -100,9 +101,9 @@ A_equal = [[[[interval_var(start=(0, upper_bound), end=(0, upper_bound), length=
                 if layer > 0 else
                 [A[neighbor][vertex][agent][layer] for neighbor in edges[vertex].difference({vertex})]
                 ))
- for layer in range(num_layers)
- for agent in range(agents_len)
- for vertex in range(edges_len)]
+    for layer in range(num_layers)
+    for agent in range(agents_len)
+    for vertex in range(edges_len)]
 
 # (8) For each vertex, agent and layer Nout from that vertex requires AT MOST a traverse to one neighbor
 [model.add(
@@ -112,9 +113,9 @@ A_equal = [[[[interval_var(start=(0, upper_bound), end=(0, upper_bound), length=
                 if layer < num_layers - 1 else
                 [A[vertex][neighbor][agent][layer] for neighbor in edges[vertex].difference({vertex})]
                 ))
- for layer in range(num_layers)
- for agent in range(agents_len)
- for vertex in range(edges_len)]
+    for layer in range(num_layers)
+    for agent in range(agents_len)
+    for vertex in range(edges_len)]
 
 # (9) For each arc (x,y), agent and layer a traverse implies a Nin in y
 [model.add(if_then(presence_of(A[vertex][neighbor][agent][layer]), presence_of(Nin[neighbor][agent][layer])))
@@ -199,7 +200,8 @@ for vertex in range(edges_len):
 
 # (Alternative 17) Prevent agents to occur at the same node at the same time
 [model.add(if_then(logical_and(presence_of(N[vertex][agent1][layer]), presence_of(N[vertex][agent2][layer])),
-    start_of(N[vertex][agent1][layer]) - end_of(N[vertex][agent2][layer]) >= 1) if agent1 != agent2 else True)
+                   start_of(N[vertex][agent1][layer]) -
+                   end_of(N[vertex][agent2][layer]) >= 1) if agent1 != agent2 else True)
  for vertex in range(edges_len)
  for layer in range(num_layers)
  for agent1 in range(agents_len)
@@ -214,8 +216,48 @@ for vertex in range(edges_len):
  for neighbor in edges[vertex].difference({vertex})]
 
 # Solve model
-print("Solving model....")
-msol = model.solve(FailLimit=100000, TimeLimit=10)
-print("Solution: ")
-msol.print_solution()
+print("Solving model...")
 
+N_result = dict()
+A_result = dict()
+Ae_result = dict()
+
+result = model.solve()
+solution = result.solution
+
+print("\n\nSolution with makespan %d:" % solution["MKSP"])
+
+for name, var in solution.var_solutions_dict.items():
+    if type(name) == str and type(var) == CpoIntervalVarSolution and var.is_present():
+        # Use regex to extract from the name the type of the variable and the agent involved
+        tokens = re.split("_", name)
+        identifier = tokens[0]
+
+        if identifier == "N":
+            N_result.setdefault(int(tokens[2]), []).append(var)
+        elif identifier == "A":
+            A_result.setdefault(int(tokens[3]), []).append(var)
+        elif identifier == "Ae":
+            Ae_result.setdefault(int(tokens[3]), []).append(var)
+
+
+def print_sorted_list_of_intervals(intervals):
+    """
+    Print the list interval variables sorted in increasing order. Those that start and end before have the precedence.
+
+    :param intervals: the list of interval variables to print
+    :return:
+    """
+    intervals.sort(key=lambda x: x.start + x.end)
+    for e in intervals:
+        print(e)
+
+
+for agent in range(agents_len):
+    print("Agent %d" % agent)
+    """
+    if agent in N_result:
+        print_sorted_list_of_intervals(N_result[agent])
+    """
+    if agent in A_result:
+        print_sorted_list_of_intervals(A_result[agent] + Ae_result[agent])
