@@ -1,15 +1,29 @@
 \documentclass[12pt, a4paper, hidelinks]{article}
 \usepackage{amsmath}
 \usepackage{amsfonts}
+\numberwithin{equation}{section}
+\usepackage[utf8]{inputenc}
+
 \begin{document}
 \title{SAT and CP-based approaches for Multi-Agent Pathfinding}
 \maketitle
+
 \begin{abstract}
-Multi-Agent Pathfinding (MAPF) is a problem with practical implications in several fields: from robotics and self-driving cars to transportation and logistics. The problem is to find the best path for several agents given the starting position and goal of each without colliding. Agents move in a grid world under the assumptions of uniform duration of actions given the discretization of time in timesteps. The grid can be easily represented as a directed graph so that each agent is in a node and can move through arches and it is not possible for two agents to be at the same node at the same time. There are many variations and approaches to solve a MAPF problem. In this work we will focus on SAT and CP-based approaches as this type of problem lends itself particularly well to be formalized using a compact set of constraints. In addition, a constraints-based approach makes it easy to extend the model should additional problems be considered.
+Multi-Agent Pathfinding (MAPF) is a problem with practical implications in several fields: from robotics and self-driving cars to transportation and logistics.
+The task is to find non-conflicting paths for a set of agents given their starting positions and destinations, usually minimizing a cost function.
+Agents move in a grid world under the assumptions of uniform duration of actions given the discretization of time in timesteps.
+The grid can be easily represented as a directed graph so that each agent is in a node and can move through arcs and it is not possible for two agents to be at the same node at the same time.
+There are many variations on the classical problem and many approaches have been proposed.
+In this work we will focus on SAT and CP-based approaches following the paper of R. Barták, J. Švancara and M. Vlk, ``A Scheduling-Based Approach to Multi-Agent Path Finding with Weighted and Capacitated Arcs'', published in Proceedings of the 17th International Conference on Autonomous Agents and MultiAgent Systems.
+As the authors suggest, this type of problem lends itself particularly well to be formalized using a compact set of constraints and we found interesting to developed as the course project.
 \end{abstract}
 
-\section{Introduction}
-Formally we can define an instance of MAPF as ordered 4-tuple ($G, A,$ $origin, destination$) where $G = (V, E)$ is a directed graph and $A$ is a set of agents. Functions $origin$: A\textrightarrow V and $destination$: A\textrightarrow V describe origin and destination nodes of an agent. $\forall a\in A$ we denote $origin(a)\in V$ the origin location (node) of the agent and $destination(a)\in V$ its destination node  [1] . Each agent has a start position and a goal position. MAPF solvers use the notion of conflicts to find a solution during planning, where a MAPF solution is called valid iff there is no conflict between any two single-agent plans. The main assumptions are:
+\section{Introduction}\label{sec:introduction}
+Formally we can define an instance of MAPF as ordered 4-tuple ($G, A,$ $origin, destination$) where $G = (V, E)$ is a directed graph and $A$ is a set of agents.
+Functional symbols $origin$: A\textrightarrow V and $destination$: A\textrightarrow V describe origin and destination nodes of an agent. $\forall a\in A$ we denote $origin(a)\in V$ the origin location (node) of the agent and $destination(a)\in V$ its destination node [1].
+Each agent has a start position and a goal position.
+MAPF solvers use the notion of conflicts to find a solution during planning, where a MAPF solution is called valid iff there is no conflict between any two single-agent plans.
+The main assumptions are:
 
 \begin{itemize} 
 \item Two agents cannot be found at the same node at the same time.
@@ -17,15 +31,20 @@ Formally we can define an instance of MAPF as ordered 4-tuple ($G, A,$ $origin, 
 \item The moves of the agents are discrete and synchronous.
 \end{itemize}
 
-The task is to return a set of actions for each agent, that will move each of the agents to its goal without conflicting with other agents while minimizing a cumulative cost function [2]. The two main approaches to solve a MAPF problems are:
+The task is to return a set of actions for each agent, that will move each of the agents to its goal without conflicting with other agents while minimizing a cumulative cost function [2].
+The two main approaches to solve a MAPF problems are:
 
 \begin{itemize}
-\item Reduction-based solvers. This type of approach is based on solvers that reduce the problem to a known one, for example SAT or Integer linear programming, and it is particularly efficient in the case of unit cost per move. 
-\item Search-based solvers. In this case the problem can be formalized as a search in a global search space, for example some variants of A*.
+\item Reduction-based solvers.
+This type of approach is based on solvers that reduce the problem to a known one, for example SAT or Integer linear programming, and it is particularly efficient in the case of unit cost per move.
+\item Search-based solvers.
+In this case the problem can be formalized as a search in a global search space, for example some variants of A*.
 \end{itemize}
 
-\section{SAT-based approach}
-SAT solvers deal with Boolean variables and give binary responses. The most difficult part was certainly representing the constraints so that they are correctly treated by the Solver of the Z3 framework. For this purpose we begin by describing the variables that we used:
+\section{SAT-based approach}\label{sec:sat-based-approach}
+SAT solvers deal with Boolean variables and give binary responses.
+The most difficult part is certainly represent the constraints so that they are correctly treated by the Z3 Solver.
+For this purpose we begin by describing the variables that we used:
 
 \begin{itemize}
 \item $\forall x \in V, \forall a \in A, t \in {0, ..., T} : At(x, a, t)$ meaning that agent $a$ is at node $x$ at time step $t$.
@@ -35,46 +54,58 @@ SAT solvers deal with Boolean variables and give binary responses. The most diff
 We now introduce constraints on these variables:
 
 \begin{description}
-\item [C1] All agents must be in their initial position at time $t = 0$: 
+\item All agents must be in their initial position at time $t = 0$:
 \begin{equation}
 \forall a \in A: At(origin(a), a, 0) = 1
-\end{equation}
-\item [C2] All agents must be in their goal position at time $t = T$: 
+\label{eq:c1}\end{equation}
+
+\item All agents must be in their goal position at time $t = T$:
 \begin{equation}
 \forall a \in A : At(dest(a), a, T) = 1
-\end{equation}
-\item [C3] All agents can be in one node in every moment: 
+\label{eq:c2}\end{equation}
+
+\item All agents can be in one node in every moment:
 \begin{equation}
 \forall a \in A, \forall t \in {0,...,T}: \displaystyle\sum_{x \in V}At(x,a,t)\leq1
-\end{equation}
-\item [C4] Every vertex must be occupied at most by an agent in every moment:
+\label{eq:c3}\end{equation}
+
+\item Every vertex must be occupied at most by an agent in every moment:
 \begin{equation}\begin{split}
 \forall x \in V, \forall a \in A, \forall t \in {0,...,T-1}: At(x, a, t) \\ 
 \Rightarrow \displaystyle\sum_{a \in A}At(x,a,t)\leq1
-\end{split}\end{equation}
-\item [C5] If an agent is in a node it needs to leave by one of the outgoing arcs:
+\end{split}\label{eq:c4}\end{equation}
+
+\item If an agent is in a node it needs to leave by one of the outgoing arcs:
 \begin{equation}\begin{split}
 \forall x \in V, \forall a \in A, \forall t \in {0,..,T-1}: At(x,a,t) \\
 \Rightarrow  \displaystyle\sum_{(x,y) \in E}Pass(x,y,a,t)=1
-\end{split}\end{equation}
-\item [C6] If an agent is using an arc, it needs to arrive at the corresponding node in the next time step
+\end{split}\label{eq:c5}\end{equation}
+
+\item If an agent is using an arc, it needs to arrive at the corresponding node in the next time step
 \begin{equation}\begin{split}
 \forall (x,y) \in E, \forall a \in A, \forall t \in {0,...,T-1}: Pass(x,y,a,t) \\
 \Rightarrow At(y,a,t+1)
-\end{split}\end{equation}
-\item [C7] Two agents cannot exchange positions:
+\end{split}\label{eq:c6}
+\end{equation}
+
+\item Two agents cannot exchange positions:
 \begin{equation}\begin{split}
 \forall (x,y) \in E, \forall t \in {0,...,T-1}: \\
 \displaystyle\sum_{a \in A, x \neq y}Pass(x,y,a,t) + Pass(y,x,a,t) \leq 1
-\end{split}\end{equation}
+\end{split}\label{eq:c7}\end{equation}
 \end{description}
 
-The correct movements inside the graph are guided by the costraints $(5)-(7)$, nevertheless it is not necessary to specify that each agent must make one and only on movement at a given instant $t$ because the spurious movements introduced by the costraint $(7)$ they will never be performed thanks to $(5)$.
+The correct movements inside the graph are guided by the costraints~\ref{eq:c5}-\ref{eq:c7}, nevertheless it is not necessary to specify that each agent must make one and only on movement at a given instant $t$ because the spurious movements introduced by the constraint~\ref{eq:c7} they will never be performed thanks to~\ref{eq:c5}.
 
-\section{CP-based approach}
+\section{CP-based approach}\label{sec:cp-based-approach}
 
-A MAPF problem can also be formalized as a scheduling problem. The presence of an agent in a node can be seen as the activity and these can be represented as interval variables that begin and finish in a certain moment represented by the predicates $StartOf$ and $EndOf$ while the difference between the end time and the start time of the activity can be set using a predicate $LengthOf$. We also used the $PresenceOf$ predicate to determine if a certain activity is present in the resulting schedule which can be seen as a sequence of activities. In order to allow each agent to be able to visit the same node several times we developed a multi-layer model  base on the copy of the original graph with some additional arcs that allow the transition between the two graphs. Let $l$ the number of layers this means that each agent can visit the same node at most $l$ times.
+A MAPF problem can also be formalized as a scheduling problem.
+The presence of an agent in a node can be seen as the activity and these can be represented as interval variables that begin and finish in a certain moment represented by the predicates $StartOf$ and $EndOf$ while the difference between the end time and the start time of the activity can be set using a predicate $LengthOf$.
+We also used the $PresenceOf$ predicate to determine if a certain activity is present in the resulting schedule which can be seen as a sequence of activities.
+In order to allow each agent to be able to visit the same node several times we developed a multi-layer model  base on the copy of the original graph with some additional arcs that allow the transition between the two graphs.
+Let $l$ the number of layers this means that each agent can visit the same node at most $l$ times.
 $\forall a \in A, \forall x \in V, \forall k \in {0,...,l-1}$ we considered the following optional activities:
+
 \begin{itemize}
 \item $N[x,a,k]$ corresponds to the time of an agent $a$ spent at node $x$ when the activity starts at layer $k$.
 \item $N^{in}[x,a,k]$ describes the time spent in the incoming arc at layer $k$.

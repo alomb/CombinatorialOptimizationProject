@@ -23,5 +23,5 @@ agents = [(0, 1), (1, 2)]  # makespan = 2
 # agents = [(0, 2), (2, 3), (3, 0)]  # makespan = 6
 # agents = [(0, 3), (3, 0)]  # makespan = 5
 
-while not run(edges, agents, makespan) and makespan <= upper_bound:
+while not run(edges, agents, makespan) and makespan < upper_bound:
     makespan += 1
