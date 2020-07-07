@@ -11,39 +11,50 @@
 \begin{abstract}
 Multi-Agent Pathfinding (MAPF) is a problem with practical implications in several fields: from robotics and self-driving cars to transportation and logistics.
 The task is to find non-conflicting paths for a set of agents given their starting positions and destinations, usually minimizing a cost function.
-Agents move in a grid world under the assumptions of uniform duration of actions given the discretization of time in timesteps.
-The grid can be easily represented as a directed graph so that each agent is in a node and can move through arcs and it is not possible for two agents to be at the same node at the same time.
 There are many variations on the classical problem and many approaches have been proposed.
 In this work we will focus on SAT and CP-based approaches following the paper of R. Barták, J. Švancara and M. Vlk, ``A Scheduling-Based Approach to Multi-Agent Path Finding with Weighted and Capacitated Arcs'', published in Proceedings of the 17th International Conference on Autonomous Agents and MultiAgent Systems.
 As the authors suggest, this type of problem lends itself particularly well to be formalized using a compact set of constraints and we found interesting to developed as the course project.
 \end{abstract}
 
 \section*{Introduction}\label{sec:introduction}
-Formally we can define an instance of MAPF as ordered 4-tuple ($G, A,$ $origin, destination$) where $G = (V, E)$ is a directed graph and $A$ is a set of agents.
-Functional symbols $origin$: A\textrightarrow V and $destination$: A\textrightarrow V describe origin and destination nodes of an agent. $\forall a\in A$ we denote $origin(a)\in V$ the origin location (node) of the agent and $destination(a)\in V$ its destination node.
-Each agent has a start position and a goal position.
-MAPF solvers use the notion of conflicts to find a solution during planning, where a MAPF solution is called valid iff there is no conflict between any two single-agent plans.
+Agents move in a grid world under the assumptions of uniform duration of actions given the discretization of time in timesteps.
+The grid can be easily represented as a directed graph so that each agent is in a node and can move through arcs and it is not possible for two agents to be at the same node at the same time.
+Formally an instance of MAPF can be defined as ordered 4-tuple ($G, A, origin, destination$) where $G = (V, E)$ is a directed graph and $A$ is a set of agents.
+Functional symbols $origin$: %A\textrightarrow V and $destination$: A\textrightarrow V describe origin and destination nodes of an agent. TODO: Restore
+For each agent $a\in A$, we denote by $origin(a)\in V$ its starting node and by $destination(a)\in V$ its destination node.
+MAPF solvers use the notion of conflicts to find a solution during planning, where a MAPF solution is called valid if and only if there is no conflict between any two single-agent plans.
 The main assumptions are:
 
 \begin{itemize} 
 \item Two agents cannot be found at the same node at the same time.
-\item Two agents cannot exchange positions.
+\item Two agents cannot exchange their positions.
 \item The moves of the agents are discrete and synchronous.
 \end{itemize}
 
-The task is to return a set of actions for each agent, that will move each of the agents to its goal without conflicting with other agents while minimizing a cumulative cost function.
-The two main approaches to solve a MAPF problems are:
+The task is to return a set of actions for each agent, that will move each of the agents to its goal without conflicting with other agents while minimizing a cumulative cost function. 
+There are two main cost functions:
+
+\begin{itemize}
+\item Makespan. 
+It is the total time until the last agent reaches its destination (the maximum of the individual costs).
+The solutions proposed in this work are makespan optimal.
+\item Sum-of-costs, is the summations over all agents of the steps required to reach their destinations. 
+It represents an upper bound of the makespan.
+\end{itemize}
+
+The literature proposes two main families of MAPF solvers:
 
 \begin{itemize}
 \item Reduction-based solvers.
 This type of approach is based on solvers that reduce the problem to a known one, for example SAT or Integer linear programming, and it is particularly efficient in the case of unit cost per move.
+This work will follow this approach.
 \item Search-based solvers.
 In this case the problem can be formalized as a search in a global search space, for example some variants of A*.
 \end{itemize}
 
 \section{SAT-based approach}\label{sec:sat-based-approach}
 SAT solvers deal with Boolean variables and give binary responses.
-The most difficult part is certainly represent the constraints so that they are correctly treated by the Z3 Solver.
+The most difficult part is certainly represented by the constraint modeling and their adaptation for the Z3 Solver.
 For this purpose we begin by describing the variables that we used:
 
 \begin{itemize}
@@ -99,23 +110,27 @@ The correct movements inside the graph are guided by the costraints~\ref{eq:1.5}
 
 \section{CP-based approach}\label{sec:cp-based-approach}
 
-A MAPF problem can also be formalized as a scheduling problem.
-The presence of an agent in a node can be seen as the activity and these can be represented as interval variables that begin and finish in a certain moment represented by the predicates $StartOf$ and $EndOf$ while the difference between the end time and the start time of the activity can be set using a predicate $LengthOf$.
-We also used the $PresenceOf$ predicate to determine if a certain activity is present in the resulting schedule which can be seen as a sequence of activities.
-In order to allow each agent to be able to visit the same node several times we developed a multi-layer model  base on the copy of the original graph with some additional arcs that allow the transition between the two graphs.
-Let $l$ the number of layers this means that each agent can visit the same node at most $l$ times.
+We now follow the paper showing how to formalize a MAPF problem as a scheduling problem.
+Similarly to the authors we implement the model using the Python API of IBM ILOG CPLEX Studio.
+For this reason the formal description uses some functions belonging to the grammar of the aforementioned IBM solver.
+IBM ILOG CPLEX allow the definitions of activities with interval variables.
+The presence of an agent in a node can be seen as the activity of occupying that node for some amunt of time and can be formulated in CPLEX as an interval variables that begin and finish in a certain moment, represented by the predicates $StartOf$ and $EndOf$. 
+The difference between the end time and the start time of the activity can be set using the predicate $LengthOf$.
+A great advantage of using interval variables is represented by their optionality, to check whether a certain activity is present or absent in the resulting schedule it is possible to use the predicate $PresenceOf$.
+In order to allow each agent to be able to visit the same node several times the authors developed a multi-layer model based on the copy of the original graph with some additional arcs that allow the transition between couples of graphs.
+Let $l$ be the number of layers, namely the maximum number of times each agent can visit the same node. In the original paper the layers belong to the set ${1,...,l}$, we decided to choose a zero-indexed approach such that our set of layers is ${0,...,l-1}$.
 $\forall a \in A, \forall x \in V, \forall k \in {0,...,l-1}$ we considered the following optional activities:
 
 \begin{itemize}
-\item $N[x,a,k]$ corresponds to the time of an agent $a$ spent at node $x$ when the activity starts at layer $k$.
+\item $N[x,a,k]$ corresponds to the time of an agent $a$ spent at node $x$ when the activity starts at layer $k$. The start and end of this activity can span all over the available time, the length must be found.
 \item $N^{in}[x,a,k]$ describes the time spent in the incoming arc at layer $k$.
 \item $N^{out}[x,a,k]$ describes the time spent in the outgoing arc at layer $k$.
-\item $A[x,y,a,k]$ where $k \in {0,...,l-1}$ which corresponds to transiting an agent $a$ from a node $x$ to the node $y$ at layer $k+1$.
-\item $A[x,x,a,k]$ where $k \in {0,...,l-2}$ which corresponds to transiting an agent $a$ from a node $x$ to the node $x$ at layer $k+1$.
+\item $A[x,y,a,k]$ where $k \in {0,...,l-1}$ which corresponds to transiting an agent $a$ from a node $x$ to the node $y$ at layer $k$. The start and end of this activity can span all over the available time, the length is set to time required to traverse the arc.
+\item $A[x,x,a,k]$ where $k \in {0,...,l-2}$ which corresponds to transiting an agent $a$ from a node $x$ to the node $x$ at layer $k$. The start and end of this activity can span all over the available time, the length is set to zero because arcs between layers are not real.
 \end{itemize}
 
-We created two different variables to represent $A[x,y,a,k]$ and $A[x,x,a,k]$ to simplify the implementation of constraints.
-The duration of the activity $A[x,x,a,k]$ is set to 0 because it is only a transition to another layer.
+In order to simplify the implementation of constraints we created two different interval variables to represent $A[x,y,a,k]$ and $A[x,x,a,k]$.
+
 We now introduce constraints on these variables:
 
 \begin{description}\label{eq:equation_set_2}
