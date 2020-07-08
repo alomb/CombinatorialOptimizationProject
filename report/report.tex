@@ -91,7 +91,7 @@ We now introduce constraints on these variables:
 \item [C2] \begin{equation} PresenceOf(N[dest(a),a,l-1]) = 1 \end{equation}
 \item [C3] \begin{equation} PresenceOf(N^{in}[orig(a),a,0]) = 0 \end{equation}
 \item [C4] \begin{equation} PresenceOf(N^{out}[dest(a),a,l-1]) = 0 \end{equation}
-\item [C4] \begin{equation}\begin{split} \forall x \in V, \forall k \in {0,...,l-1}, x \neq orig(a) \lor k \neq 0: \\ PresenceOf(N[x,a,k]) \iff PresenceOf(N^{in}[x,a,k]) \end{split}\end{equation} 
+\item [C4] \begin{equation}\begin{split} \forall x \in V, \forall k \in {0,...,l-1}, x \neq orig(a) \lor k \neq 0: \\ PresenceOf(N[x,a,k]) \iff PresenceOf(N^{in}[x,a,k]) \end{split}\end{equation}
 \item [C5] \begin{equation}\begin{split} \forall x \in V, \forall k \in {0,...,l-1}, x \neq dest(a) \lor k \neq l-1: \\ PresenceOf(N[x,a,k]) \iff PresenceOf(N^{out}[x,a,k]) \end{split}\end{equation}
 
 

@@ -36,7 +36,7 @@ at_ = Function('at', IntSort(), IntSort(), IntSort(), BoolSort())
 pass_ = Function('pass', IntSort(), IntSort(), IntSort(), IntSort(), BoolSort())
 
 
-def run(edges, agents, makespan):
+def run_Z3(edges, agents, makespan):
     """
     Create the model and tries to solve it.
 
@@ -51,9 +51,10 @@ def run(edges, agents, makespan):
     edges_len = len(edges)
     agents_len = len(agents)
 
+
     if edges_len <= 0:
         raise ArgumentError("The graph must not be empty")
-    if any([vertex not in range(edges_len) for neighbors in edges for vertex in neighbors.keys()]):
+    if any([vertex not in range(edges_len) for neighbors in edges for vertex in neighbors]):
         raise ArgumentError("Neighbors of nodes must be valid vertices")
     if agents_len <= 0:
         raise ArgumentError("The number of agents must be at least one")
@@ -61,6 +62,7 @@ def run(edges, agents, makespan):
         raise ArgumentError("Agents' destinations and origins must be at valid vertices")
     if makespan < 0:
         raise ArgumentError("The makespan must be greater or equal than zero")
+    
 
     # ==================================================================================================================
     # Variables and summations
@@ -123,7 +125,7 @@ def run(edges, agents, makespan):
     # Each neighbor of a certain vertex, in a specific time for a specific agent is mapped to:
     # 1 if there is a true pass() between it and the vertex set of neighbors
     # 0 otherwise
-    sum5_tmp = [[[list(map(lambda n: If(pass_(vertex, n, agent, time), 1, 0), edges[vertex].keys()))
+    sum5_tmp = [[[list(map(lambda n: If(pass_(vertex, n, agent, time), 1, 0), edges[vertex]))#.keys()))
                   for vertex in range(edges_len)]
                  for time in range(makespan)]
                 for agent in range(agents_len)]
