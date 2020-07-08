@@ -39,3 +39,4 @@ edges, _ = generate_grid_2d_graph(ROWS, COLUMNS, agents)
 # ----------------------------------------------------------------------------------------------------------------------
 while not run_Z3(edges, agents, makespan) and makespan <= upper_bound:
     makespan += 1
+

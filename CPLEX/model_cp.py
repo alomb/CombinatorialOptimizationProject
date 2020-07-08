@@ -242,9 +242,6 @@ def run_CPLEX(edges, agents, upper_bound, num_layers):
     except:
         return False, -1
 
-
-
-
 def print_sorted_list_of_intervals(intervals):
     """
     Print the list interval variables sorted in increasing order. Those that start and end before have the precedence.
