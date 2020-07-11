@@ -4,15 +4,15 @@ import matplotlib.pyplot as plt
 
 def generate_grid_2d_graph(rows, columns, agents):
 
-    G = nx.grid_2d_graph(rows, columns)
-    G = nx.convert_node_labels_to_integers(G)
+    graph = nx.grid_2d_graph(rows, columns)
+    graph = nx.convert_node_labels_to_integers(graph)
 
     shortest_paths = []
 
     for agent in agents:
-        shortest_paths.append(nx.shortest_path_length(G, source=agent[0], target=agent[1]))
+        shortest_paths.append(nx.shortest_path_length(graph, source=agent[0], target=agent[1]))
 
-    G = nx.convert_node_labels_to_integers(G)
+    graph = nx.convert_node_labels_to_integers(graph)
 
     """
     Generation of edges as OrderedDict
@@ -28,7 +28,7 @@ def generate_grid_2d_graph(rows, columns, agents):
 
     edges = []
 
-    for node, neighbors in G.adj.items():
+    for node, neighbors in graph.adj.items():
         edges.insert(node, set())
         edges[node].add(node)
         for neighbor, _ in neighbors.items():
@@ -37,7 +37,7 @@ def generate_grid_2d_graph(rows, columns, agents):
     [print(str(node) + ": " + str(neighbors)) for node, neighbors in enumerate(edges)]
     print(agents)
 
-    nx.draw(G, with_labels=True)
+    nx.draw(graph, with_labels=True)
     plt.show()
 
     return edges, min(shortest_paths)

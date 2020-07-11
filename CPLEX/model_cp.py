@@ -117,7 +117,8 @@ def run_CPLEX(edges, agents, upper_bound, num_layers):
      for agent in range(agents_len)
      for layer in range(num_layers)]
 
-    # (11) For each arc (x,x), agent and layer (excluding the last) a traverse implies a Nin in x in the successive layer
+    # (11) For each arc (x,x), agent and layer (excluding the last) a traverse implies a Nin in x in the successive
+    # layer
     [model.add(if_then(presence_of(A_equal[vertex][0][agent][layer]), presence_of(Nin[vertex][agent][layer + 1])))
      for vertex in range(edges_len)
      for agent in range(agents_len)
@@ -144,8 +145,9 @@ def run_CPLEX(edges, agents, upper_bound, num_layers):
      for agent, pair in enumerate(agents)
      for vertex in range(edges_len)]
 
-    # (16) For each vertex, agent and layer the beginning of a N activity coincides with the start of a Nout one, excluding
-    # the case when the vertex it's the agent destination and the layer is the last (already considered in (14))
+    # (16) For each vertex, agent and layer the beginning of a N activity coincides with the start of a Nout one,
+    # excluding the case when the vertex it's the agent destination and the layer is the last (already considered
+    # in (14))
     [model.add(end_of(N[vertex][agent][layer]) == start_of(Nout[vertex][agent][layer]))
      if pair[1] != vertex or layer != num_layers - 1
      else True
@@ -153,37 +155,39 @@ def run_CPLEX(edges, agents, upper_bound, num_layers):
      for agent, pair in enumerate(agents)
      for vertex in range(edges_len)]
 
+    # (17) Prevent agents to occur at the same node at the same time
+
     # TDM
+    tm_size = num_layers * agents_len
+    tm = transition_matrix(tm_size)
 
     """
-    tm_size = edges_len * num_layers * agents_len
-    tm = transition_matrix(tm_size)
+    Each vertex has the same TDM and its own no_overlap.
+    In the TDM, for each agent in different layers the distance between two N can be at least 0 (default value), whereas
+    for different agents must be at least 1.
+    
+    Example of TDM with 2 agents and 4 layers:
+    00001111
+    00001111
+    00001111
+    00001111
+    11110000
+    11110000
+    11110000
+    11110000
+    """
+
     for i in range(tm_size):
         for j in range(tm_size):
-            tm.set_value(i, j, 1)     
-    """
+            if j not in range((i // num_layers) * num_layers, (i // num_layers) * num_layers + num_layers):
+                tm.set_value(i, j, 1)
 
-    """
-    matrix = []
-    
-    for vertex in range(edges_len):
-        for layer in range(num_layers):
-            tm = transition_matrix(agents_len * agents_len)
-            for agent1 in range(agents_len):
-                for agent2 in range(agents_len):
-                    if agent1 == agent2:
-                        tm.set_value(agent1, agent2, 0)
-                    else:
-                        tm.set_value(agent1, agent2, 1)
-            
-    
-    # (17) Prevent agents to occur at the same node at the same time
     [model.add(no_overlap(sequence_var([N[vertex][agent][layer]
                                         for agent in range(agents_len)
-                                        for layer in range(num_layers)])))
+                                        for layer in range(num_layers)]), tm))
      for vertex in range(edges_len)]
-    """
 
+    """
     # (Alternative 17) Prevent agents to occur at the same node at the same time
     [model.add(if_then(logical_and(presence_of(N[vertex][agent1][layer]), presence_of(N[vertex][agent2][layer])),
                        start_of(N[vertex][agent1][layer]) -
@@ -192,20 +196,21 @@ def run_CPLEX(edges, agents, upper_bound, num_layers):
      for layer in range(num_layers)
      for agent1 in range(agents_len)
      for agent2 in range(agents_len)]
-
+    """
 
     # (18) Prevent agents from using an arc at the same time (no-swap constraint)
-    [model.add(no_overlap([element for sublist in [[A[vertex][neighbor][agent][layer], A[neighbor][vertex][agent][layer]]
-                                                   for agent in range(agents_len)
-                                                   for layer in range(num_layers)] for element in sublist]))
+    [model.add(no_overlap([element for sublist in
+                           [[A[vertex][neighbor][agent][layer], A[neighbor][vertex][agent][layer]]
+                            for agent in range(agents_len)
+                            for layer in range(num_layers)] for element in sublist]))
      for vertex in range(edges_len)
      for neighbor in edges[vertex].difference({vertex})]
 
     model.add(model.minimize(makespan))
 
-    N_result = dict()
-    A_result = dict()
-    Ae_result = dict()
+    n_result = dict()
+    a_result = dict()
+    ae_result = dict()
 
     # try / catch block because model.solve() returns an exception if the problem is unsatisfiable
     try:
@@ -222,25 +227,29 @@ def run_CPLEX(edges, agents, upper_bound, num_layers):
                 identifier = tokens[0]
 
                 if identifier == "N":
-                    N_result.setdefault(int(tokens[2]), []).append(var)
+                    n_result.setdefault(int(tokens[2]), []).append(var)
                 elif identifier == "A":
-                    A_result.setdefault(int(tokens[3]), []).append(var)
+                    a_result.setdefault(int(tokens[3]), []).append(var)
                 elif identifier == "Ae":
-                    Ae_result.setdefault(int(tokens[3]), []).append(var)
+                    ae_result.setdefault(int(tokens[3]), []).append(var)
 
         for agent in range(agents_len):
             print("Agent %d" % agent)
 
-            if agent in N_result:
-                print_sorted_list_of_intervals(N_result[agent])
+            if agent in n_result:
+                print_sorted_list_of_intervals(n_result[agent])
 
-            if agent in A_result:
-                print_sorted_list_of_intervals(A_result[agent] + Ae_result[agent])
+            if agent in a_result:
+                print_sorted_list_of_intervals(a_result[agent])
+
+            if agent in ae_result:
+                print_sorted_list_of_intervals(ae_result[agent])
 
         return True, solution["MKSP"]
 
-    except:
+    except CpoException:
         return False, -1
+
 
 def print_sorted_list_of_intervals(intervals):
     """
@@ -252,6 +261,7 @@ def print_sorted_list_of_intervals(intervals):
     intervals.sort(key=lambda x: x.start + x.end)
     for e in intervals:
         print(e)
+
 
 def solving_MAPF(agents, edges, upper_bound, shortest_path):
 
@@ -266,12 +276,12 @@ def solving_MAPF(agents, edges, upper_bound, shortest_path):
 
     num_layers = 1
 
-    check, RET = run_CPLEX(edges, agents, upper_bound, num_layers)
+    check, ret = run_CPLEX(edges, agents, upper_bound, num_layers)
 
-    while check == False and num_layers < upper_bound:
-        check, RET = run_CPLEX(edges, agents, upper_bound, num_layers)
+    while check is False and num_layers < upper_bound:
+        check, ret = run_CPLEX(edges, agents, upper_bound, num_layers)
         num_layers += 1
 
-    num_layers = round((RET - shortest_path) / 2 + 1)
+    num_layers = round((ret - shortest_path) / 2 + 1)
 
-    return check, RET, num_layers
+    return check, ret, num_layers

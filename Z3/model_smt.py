@@ -62,7 +62,6 @@ def run_Z3(edges, agents, makespan):
         raise ArgumentError("Agents' destinations and origins must be at valid vertices")
     if makespan < 0:
         raise ArgumentError("The makespan must be greater or equal than zero")
-    
 
     # ==================================================================================================================
     # Variables and summations

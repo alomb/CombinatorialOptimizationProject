@@ -23,7 +23,7 @@ while ROWS <= MAX_SIZE:
     upper_bound = 2 * ROWS
 
     agents = [(random.randint(0, ROWS * COLUMNS - 1), random.randint(0, ROWS * COLUMNS - 1)),
-             (random.randint(0, ROWS * COLUMNS - 1), random.randint(0, ROWS * COLUMNS - 1))]
+              (random.randint(0, ROWS * COLUMNS - 1), random.randint(0, ROWS * COLUMNS - 1))]
 
     edges, shortest_path = generate_grid_2d_graph(ROWS, COLUMNS, agents)
 
