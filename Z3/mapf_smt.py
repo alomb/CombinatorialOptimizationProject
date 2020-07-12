@@ -1,6 +1,6 @@
 from Z3.model_smt import run_Z3
 import random
-from graphs.grid_2d_graph import generate_grid_2d_graph
+from environments.environments import environments
 
 
 """
@@ -21,20 +21,17 @@ edges_Z3 = [OrderedDict([(0, None), (1, None)]),
          OrderedDict([(3, None), (5, None)])]
 """
 
-ROWS = 5
-COLUMNS = 5
-
+ROWS = 4
+COLUMNS = 4
+number_of_agents = ROWS
+graph = "intersection_graph"
 # Makespan: time steps (from 0 to makespan_size - 1)
 makespan = 0
 
 # Maximum makespan
 upper_bound = 10
 
-# TODO: check if the start/end position of an agent is equal to the start/end position of another
-agents = [(random.randint(0, ROWS * COLUMNS - 1), random.randint(0, ROWS * COLUMNS - 1)),
-          (random.randint(0, ROWS * COLUMNS - 1), random.randint(0, ROWS * COLUMNS - 1))]
-
-edges, _ = generate_grid_2d_graph(ROWS, COLUMNS, agents)
+agents, edges, _ = environments(ROWS, COLUMNS, number_of_agents, graph)
 
 # ----------------------------------------------------------------------------------------------------------------------
 while not run_Z3(edges, agents, makespan) and makespan <= upper_bound:

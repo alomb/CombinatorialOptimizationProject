@@ -184,15 +184,27 @@ def run_CPLEX(edges, agents, upper_bound, num_layers):
      for vertex in range(edges_len)]
     """
 
-    # (Alternative 17) Prevent agents to occur at the same node at the same time
+    """
+    # (Alternative 17.1) Prevent agents to occur at the same node at the same time
     [model.add(if_then(logical_and(presence_of(N[vertex][agent1][layer]), presence_of(N[vertex][agent2][layer])),
                        start_of(N[vertex][agent1][layer]) -
-                       end_of(N[vertex][agent2][layer]) >= 1) if agent1 != agent2 else True)
+                       end_of(N[vertex][agent2][layer]) >= 0) if agent1 != agent2 else True)
      for vertex in range(edges_len)
      for layer in range(num_layers)
      for agent1 in range(agents_len)
      for agent2 in range(agents_len)]
+    """
 
+    """
+    # (Alternative 17.2) Prevent agents to occur at the same node at the same time
+    [model.add(if_then(logical_and(presence_of(Nin[vertex][agent1][layer]), presence_of(Nout[vertex][agent2][layer])),
+                       start_of(Nin[vertex][agent1][layer]) -
+                       start_of(Nout[vertex][agent2][layer]) >= 0) if agent1 != agent2 else True)
+     for vertex in range(edges_len)
+     for layer in range(num_layers)
+     for agent1 in range(agents_len)
+     for agent2 in range(agents_len)]
+    """
 
     # (18) Prevent agents from using an arc at the same time (no-swap constraint)
     [model.add(no_overlap([element for sublist in [[A[vertex][neighbor][agent][layer], A[neighbor][vertex][agent][layer]]
@@ -201,6 +213,7 @@ def run_CPLEX(edges, agents, upper_bound, num_layers):
      for vertex in range(edges_len)
      for neighbor in edges[vertex].difference({vertex})]
 
+    # (19) Minimize makespan
     model.add(model.minimize(makespan))
 
     N_result = dict()
@@ -241,6 +254,7 @@ def run_CPLEX(edges, agents, upper_bound, num_layers):
 
     except:
         return False, -1
+
 
 def print_sorted_list_of_intervals(intervals):
     """
