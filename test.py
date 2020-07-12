@@ -4,8 +4,6 @@ from environments.environments import environments
 import time
 import numpy as np
 import matplotlib.pyplot as plt
-import networkx as nx
-
 
 # TODO: understand how to get solver statistics to plot them
 

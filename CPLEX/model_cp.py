@@ -203,13 +203,14 @@ def run_CPLEX(edges, agents, upper_bound, num_layers):
     ae_result = dict()
 
     # try / catch block because model.solve() returns an exception if the problem is unsatisfiable
-    try:
-        result = model.solve()
-        solution = result.solution
+    result = model.solve()
+    solution = result.solution
 
+    if result.solve_status != "Infeasible":
         # Solve model
         print("Solving model...")
         print("\n\nSolution with makespan %d:" % solution["MKSP"])
+
         for name, var in solution.var_solutions_dict.items():
             if type(name) == str and type(var) == CpoIntervalVarSolution and var.is_present():
                 # Use regex to extract from the name the type of the variable and the agent involved
@@ -237,8 +238,9 @@ def run_CPLEX(edges, agents, upper_bound, num_layers):
 
         return True, solution["MKSP"]
 
-    except CpoException:
+    else:
         return False, -1
+
 
 
 def print_sorted_list_of_intervals(intervals):

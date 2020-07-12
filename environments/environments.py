@@ -13,20 +13,16 @@ def environments(rows, columns, number_of_agents, graph):
     G = nx.convert_node_labels_to_integers(G)
     G = nx.convert_node_labels_to_integers(G)
 
-    graph = nx.grid_2d_graph(rows, columns)
-
-    graph = nx.convert_node_labels_to_integers(graph)
-    graph = nx.convert_node_labels_to_integers(graph)
-
     edges = []
 
-    for node, neighbors in graph.adj.items():
+    for node, neighbors in G.adj.items():
         edges.insert(node, set())
         edges[node].add(node)
         for neighbor, _ in neighbors.items():
             edges[node].add(neighbor)
 
     agents = generate_agents(edges, number_of_agents)
+    print(agents)
 
     shortest_paths = []
 
@@ -35,7 +31,7 @@ def environments(rows, columns, number_of_agents, graph):
 
     [print(str(node) + ": " + str(neighbors)) for node, neighbors in enumerate(edges)]
 
-    nx.draw(graph, with_labels=True)
+    nx.draw(G, with_labels=True)
     plt.show()
 
     return agents, edges, min(shortest_paths)

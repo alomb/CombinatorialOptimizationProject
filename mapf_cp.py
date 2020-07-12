@@ -1,4 +1,4 @@
-from CPLEX.model_cp import run_CPLEX
+from CPLEX.model_cp import run_CPLEX, solving_MAPF
 from environments.environments import environments
 
 # ======================================================================================================================
@@ -17,23 +17,14 @@ from environments.environments import environments
 ROWS = 3
 COLUMNS = 3
 number_of_agents = 3
+upper_bound = 10
 graph = "intersection_graph"
 
 agents, edges, shortest_path = environments(ROWS, COLUMNS, number_of_agents, graph)
 
-# layers from 0 to l - 1 both included
-num_layers = 1
-upper_bound = 10
+agents = [(0, 0), (0, 1), (2, 1)]
 
-check, RET = run_CPLEX(edges, agents, upper_bound, num_layers)
-
-while not check and num_layers < upper_bound:
-    check, RET = run_CPLEX(edges, agents, upper_bound, num_layers)
-    num_layers += 1
-
-print("num_layers good", num_layers)
-num_layers = round((RET - shortest_path)/2) + 1
-print("num_layers not good", num_layers)
+check, RET, num_layers = solving_MAPF(agents, edges, upper_bound, shortest_path)
 
 if check:
     _, mksp = run_CPLEX(edges, agents, RET, num_layers)
