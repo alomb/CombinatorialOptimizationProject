@@ -62,7 +62,6 @@ def run_Z3(edges, agents, makespan):
         raise ArgumentError("Agents' destinations and origins must be at valid vertices")
     if makespan < 0:
         raise ArgumentError("The makespan must be greater or equal than zero")
-    
 
     # ==================================================================================================================
     # Variables and summations
@@ -160,10 +159,6 @@ def run_Z3(edges, agents, makespan):
              for neighbor in range(len(edges[vertex]))]
             for vertex in range(edges_len)]
 
-    # ==================================================================================================================
-    # Constraints
-    # ==================================================================================================================
-
     # Vertices
     x = Int('x')
     y = Int('y')
@@ -171,6 +166,10 @@ def run_Z3(edges, agents, makespan):
     a = Int('a')
     # Time step
     t = Int('t')
+
+    # ==================================================================================================================
+    # Constraints
+    # ==================================================================================================================
 
     # Agent variable constraint
     s.add([And(a >= 0, a < agents_len)])

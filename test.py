@@ -62,7 +62,6 @@ def test(rows, columns, max_size, graph):
     plt.yscale('log')
     plt.show()
 
-
 ROWS = 2
 COLUMNS = 2
 MAX_SIZE = 5

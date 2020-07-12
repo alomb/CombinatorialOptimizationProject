@@ -2,8 +2,8 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import random
 
-def environments(rows, columns, number_of_agents, graph):
 
+def environments(rows, columns, number_of_agents, graph):
 
     if graph == "grid_2d_graph":
         G = nx.grid_2d_graph(rows, columns)
@@ -13,22 +13,14 @@ def environments(rows, columns, number_of_agents, graph):
     G = nx.convert_node_labels_to_integers(G)
     G = nx.convert_node_labels_to_integers(G)
 
+    graph = nx.grid_2d_graph(rows, columns)
 
-    """
-    Generation of edges as OrderedDict
-    
-    edges_Z3 = []
-
-    for node, neighbors in G.adj.items():
-        edges_Z3.insert(node, OrderedDict())
-        for neighbor, _ in neighbors.items():
-            edges_Z3[node][neighbor] = None
-    
-    """
+    graph = nx.convert_node_labels_to_integers(graph)
+    graph = nx.convert_node_labels_to_integers(graph)
 
     edges = []
 
-    for node, neighbors in G.adj.items():
+    for node, neighbors in graph.adj.items():
         edges.insert(node, set())
         edges[node].add(node)
         for neighbor, _ in neighbors.items():
@@ -43,7 +35,7 @@ def environments(rows, columns, number_of_agents, graph):
 
     [print(str(node) + ": " + str(neighbors)) for node, neighbors in enumerate(edges)]
 
-    nx.draw(G, with_labels=True)
+    nx.draw(graph, with_labels=True)
     plt.show()
 
     return agents, edges, min(shortest_paths)
@@ -69,5 +61,4 @@ def generate_agents(edges, number_of_agents):
         agents.append((x[i], y[i]))
         i += 1
 
-    print(agents)
     return agents

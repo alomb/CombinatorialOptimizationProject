@@ -3,6 +3,29 @@
 \usepackage{amsfonts}
 \numberwithin{equation}{section}
 \usepackage[utf8]{inputenc}
+\usepackage{listings}
+
+\lstset{
+breakindent=0em,
+language=Python,
+basicstyle=\footnotesize,
+% numbers=left,
+% numberstyle=\footnotesize,
+% stepnumber=2,
+% numbersep=5pt,
+showspaces=false,
+showstringspaces=false,
+showtabs=false,
+frame=single,
+tabsize=2,
+captionpos=b,
+breaklines=true,
+breakatwhitespace=true,
+breakautoindent=true,
+escapeinside={\%*}{*)},
+breaklines=true,
+linewidth=\textwidth
+}
 
 \begin{document}
 \title{SAT and CP-based approaches for Multi-Agent Pathfinding}
@@ -17,104 +40,181 @@ As the authors suggest, this type of problem lends itself particularly well to b
 \end{abstract}
 
 \section*{Introduction}\label{sec:introduction}
+\subsection*{A formal and brief overview}
 Agents move in a grid world under the assumptions of uniform duration of actions given the discretization of time in timesteps.
-The grid can be easily represented as a directed graph so that each agent is in a node and can move through arcs and it is not possible for two agents to be at the same node at the same time.
-Formally an instance of MAPF can be defined as ordered 4-tuple ($G, A, origin, destination$) where $G = (V, E)$ is a directed graph and $A$ is a set of agents.
-Functional symbols $origin$: %A\textrightarrow V and $destination$: A\textrightarrow V describe origin and destination nodes of an agent. TODO: Restore
+The grid can be easily represented as a directed graph so that each agent is in a node and can move through the outgoing arcs and it is not possible for two agents to be at the same node at the same time.
+Formally, an instance of MAPF can be defined as ordered 4-tuple ($G, A, origin, destination$) where $G = (V, E)$ is a directed graph and $A$ is a set of agents.
+Functional symbols $origin$: A\textrightarrow V and $destination$: A\textrightarrow V describe respectively origin and destination nodes of an agent.
 For each agent $a\in A$, we denote by $origin(a)\in V$ its starting node and by $destination(a)\in V$ its destination node.
 MAPF solvers use the notion of conflicts to find a solution during planning, where a MAPF solution is called valid if and only if there is no conflict between any two single-agent plans.
 The main assumptions are:
 
 \begin{itemize} 
 \item Two agents cannot be found at the same node at the same time.
-\item Two agents cannot exchange their positions.
+\item Two agents cannot exchange their positions, (in some variations is possible).
 \item The moves of the agents are discrete and synchronous.
 \end{itemize}
 
-The task is to return a set of actions for each agent, that will move each of the agents to its goal without conflicting with other agents while minimizing a cumulative cost function. 
-There are two main cost functions:
+The task is to return a set of actions for each agent, that respects the mentioned constraints and moves each agent to its goal minimizing a cumulative cost function. 
+The literature presents two well-known cost functions:
 
 \begin{itemize}
 \item Makespan. 
 It is the total time until the last agent reaches its destination (the maximum of the individual costs).
 The solutions proposed in this work are makespan optimal.
-\item Sum-of-costs, is the summations over all agents of the steps required to reach their destinations. 
-It represents an upper bound of the makespan.
+\item Sum-of-costs.
+It is the summation over all agents of the steps required to reach their destinations. 
+It represents an upper bound of the makespan and could be seen as the sum of individual costs.
 \end{itemize}
 
-The literature proposes two main families of MAPF solvers:
+In conclusion, the literature proposes two main families of MAPF solvers:
 
 \begin{itemize}
 \item Reduction-based solvers.
 This type of approach is based on solvers that reduce the problem to a known one, for example SAT or Integer linear programming, and it is particularly efficient in the case of unit cost per move.
-This work will follow this approach.
+This work follows this approach.
 \item Search-based solvers.
 In this case the problem can be formalized as a search in a global search space, for example some variants of A*.
 \end{itemize}
 
-\section{SAT-based approach}\label{sec:sat-based-approach}
-SAT solvers deal with Boolean variables and give binary responses.
-The most difficult part is certainly represented by the constraint modeling and their adaptation for the Z3 Solver.
-For this purpose we begin by describing the variables that we used:
+\subsection*{Our implementation}
+Our implementation uses two Python APIs.
+For this reason, we use a single encoding of the input data.
+
+TODO: Finish
+
+\section{SMT-based approach}\label{sec:smt-based-approach}
+In the original paper the authors introduced a SAT-based approach while this implementation replaces it with a SMT-based one. 
+Satisfiability Modulo Theories (SMT) solvers takes systems in arbitrary format (first-order logic), while SAT solvers are limited to Boolean equations and variables, nevertheless they still mantain the speed and automation of today's Boolean engines.
+The authors of the paper developed their solution using the Picat language, we use the Z3 Solver's Python API: Z3Py.
+The most difficult part is certainly represented by the constraint modeling and their adaptation for the Z3 Theorem Prover.
+Following the original work, we define the following variables as Z3 Boolean Functions:
 
 \begin{itemize}
 \item $\forall x \in V, \forall a \in A, t \in {0, ..., T} : At(x, a, t)$ meaning that agent $a$ is at node $x$ at time step $t$.
 \item $\forall(x, y)\in E, \forall a \in A, t \in {0, ..., T-1} : Pass(x, y, a, t)$ meaning that agent $a$ goes through arc $(x, y)$ at time step $t$. 
 \end{itemize}
 
-We now introduce constraints on these variables:
+\begin{lstlisting}
+at_ = Function('at', IntSort(), IntSort(), IntSort(), BoolSort())
+pass_ = Function('pass', IntSort(), IntSort(), IntSort(), IntSort(), BoolSort())
+\end{lstlisting}
 
+These variables are the problem unknowns and must be assigned to either true (1) or false (0). We define as Z3 Integer Functions the following constant representations:
+
+\begin{itemize}
+\item $\forall a \in A : origin(a)$ which returns the initial position of the agent $a$.
+\item $\forall a \in A : dest(a)$ which returns the goal position of the agent $a$.
+\end{itemize}
+
+\begin{lstlisting}
+orig_ = Function('orig', IntSort(), IntSort())
+dest_ = Function('dest', IntSort(), IntSort())
+\end{lstlisting}
+
+The model is completed introducing the constraints on the variables:
+
+% 1.1
 \begin{description}\label{equation_set_1}
 \item All agents must be in their initial position at time $t = 0$:
 \begin{equation}
 \forall a \in A: At(origin(a), a, 0) = 1
 \label{eq:1.1}\end{equation}
 
+% 1.2
 \item All agents must be in their goal position at time $t = T$:
 \begin{equation}
 \forall a \in A : At(dest(a), a, T) = 1
 \label{eq:1.2}\end{equation}
 
+% 1.3
 \item All agents can be in one node in every moment:
 \begin{equation}
 \forall a \in A, \forall t \in {0,...,T}: \displaystyle\sum_{x \in V}At(x,a,t)\leq1
 \label{eq:1.3}\end{equation}
 
+% 1.4
 \item Every vertex must be occupied at most by an agent in every moment:
 \begin{equation}\begin{split}
 \forall x \in V, \forall a \in A, \forall t \in {0,...,T-1}: At(x, a, t) \\ 
 \Rightarrow \displaystyle\sum_{a \in A}At(x,a,t)\leq1
 \end{split}\label{eq:1.4}\end{equation}
 
+% 1.5
 \item If an agent is in a node it needs to leave by one of the outgoing arcs:
 \begin{equation}\begin{split}
 \forall x \in V, \forall a \in A, \forall t \in {0,..,T-1}: At(x,a,t) \\
 \Rightarrow  \displaystyle\sum_{(x,y) \in E}Pass(x,y,a,t)=1
 \end{split}\label{eq:1.5}\end{equation}
 
-\item If an agent is using an arc, it needs to arrive at the corresponding node in the next time step
+% 1.6
+\item If an agent is using an arc, it must arrive at the corresponding node in the next time step
 \begin{equation}\begin{split}
 \forall (x,y) \in E, \forall a \in A, \forall t \in {0,...,T-1}: Pass(x,y,a,t) \\
 \Rightarrow At(y,a,t+1)
 \end{split}\label{eq:1.6}
 \end{equation}
 
-\item Two agents cannot exchange positions:
+% 1.7
+\item Two agents cannot exchange their positions:
 \begin{equation}\begin{split}
 \forall (x,y) \in E, \forall t \in {0,...,T-1}: \\
 \displaystyle\sum_{a \in A, x \neq y}Pass(x,y,a,t) + Pass(y,x,a,t) \leq 1
 \end{split}\label{eq:1.7}\end{equation}
 \end{description}
 
-The correct movements inside the graph are guided by the costraints~\ref{eq:1.5}-\ref{eq:1.7}, nevertheless it is not necessary to specify that each agent must make one and only on movement at a given instant $t$ because the spurious movements introduced by the constraint~\ref{eq:1.7} they will never be performed thanks to~\ref{eq:1.5}.
+The correct movements inside the graph are guided by the costraints~\ref{eq:1.5}-\ref{eq:1.7}, nevertheless it is not necessary to specify that each agent must make one and only on movement at a given instant $t$ because the spurious movements introduced by the constraint~\ref{eq:1.7} will never be performed thanks to~\ref{eq:1.5}.
+
+The Z3 implementation is divided in three parts.
+The details of the first one have been described before during variable and constant definitions. 
+The second one defines intermediate variables useful to the definitions of the constraints in the third and last section.
+In particular, the second part defines the summations present in the formal formulations of the original work, making easier to define the involved constraints.
+For example the following code uses the Z3 function \textit{If} to map true variables to 1 and false variables to 0 cycling all combinations and summing over a certain ``dimension'' (for simplicity it is usually the inner one):
+
+\begin{lstlisting}
+sum3_tmp = [[[If(at_(vertex, agent, time), 1, 0)
+                       for vertex in range(edges_len)]
+                      for time in range(makespan + 1)]
+                     for agent in range(agents_len)]
+
+sum3 = [[sum(sum3_tmp[agent][time])
+         for time in range(makespan + 1)]
+        for agent in range(agents_len)]
+
+sum3 = [element for sublist in sum3 
+            for element in sublist]
+\end{lstlisting}\label{code:1.3.1}
+
+The resulting list is finally flatten and then used in the constraint~\ref{eq:1.3} in the following way:
+
+\begin{lstlisting}
+s.add([vertex <= 1 for vertex in sum3])
+\end{lstlisting}\label{code:1.3.2}
+
+The other constraints which do not use summations are solved using the Z3 function \textit{ForAll} like the~\ref{eq:1.6}
+
+\begin{lstlisting}
+s.add([ForAll([x, y, a, t],
+                  Implies(
+                      And(x >= 0, x < edges_len, y >= 0, y < edges_len, t >= 0, t <= makespan - 1, arc_(x, y),
+                          pass_(x, y, a, t)),
+                      at_(y, a, t + 1)
+                  ))])
+\end{lstlisting}\label{code:1.6}
+
+The variables \textit{x}, \textit{y}, \textit{a} and \textit{t} are Z3 Integer variables, which are bound independently to each \textit{ForAll} expression.
+Because \textit{a} is used in the other \textit{ForAll} style constraints it has been similarly bound to a specific interval of integer values outside the shown piece of code.
+\textit{arc\_} is a Boolean Z3 Function used to represent the presence of an arc between a couple of nodes.
+
+To find an optimal makespan the makespan is increased until a satisfiable formula is generated.
 
 \section{CP-based approach}\label{sec:cp-based-approach}
 
 We now follow the paper showing how to formalize a MAPF problem as a scheduling problem.
 Similarly to the authors we implement the model using the Python API of IBM ILOG CPLEX Studio.
-For this reason the formal description uses some functions belonging to the grammar of the aforementioned IBM solver.
-IBM ILOG CPLEX allow the definitions of activities with interval variables.
-The presence of an agent in a node can be seen as the activity of occupying that node for some amunt of time and can be formulated in CPLEX as an interval variables that begin and finish in a certain moment, represented by the predicates $StartOf$ and $EndOf$. 
+For this reason, the formal description uses some functions belonging to the grammar of the aforementioned IBM solver.
+IBM ILOG CPLEX allows the definition of activities with interval variables.
+The presence of an agent in a node can be seen as the activity of occupying that node for some amunt of time and can be formulated in CPLEX as an interval variables that begins and finishes in a certain moment, represented by the predicates $StartOf$ and $EndOf$. 
 The difference between the end time and the start time of the activity can be set using the predicate $LengthOf$.
 A great advantage of using interval variables is represented by their optionality, to check whether a certain activity is present or absent in the resulting schedule it is possible to use the predicate $PresenceOf$.
 In order to allow each agent to be able to visit the same node several times the authors developed a multi-layer model based on the copy of the original graph with some additional arcs that allow the transition between couples of graphs.
@@ -129,20 +229,7 @@ $\forall a \in A, \forall x \in V, \forall k \in {0,...,l-1}$ we considered the 
 \item $A[x,x,a,k]$ where $k \in {0,...,l-2}$ which corresponds to transiting an agent $a$ from a node $x$ to the node $x$ at layer $k$. The start and end of this activity can span all over the available time, the length is set to zero because arcs between layers are not real.
 \end{itemize}
 
-<<<<<<< HEAD
-We created two different variables to represent $A[x,y,a,k]$ and $A[x,x,a,k]$ to simplify the implementation of constraints. The duration of the activity $A[x,x,a,k]$ is set to 0 because it is only a transition to another layer. 
-We now introduce constraints on these variables:
-
-\begin{description}
-\item [C1] \begin{equation} PresenceOf(N[orig(a),a,0]) = 1 \end{equation}
-\item [C2] \begin{equation} PresenceOf(N[dest(a),a,l-1]) = 1 \end{equation}
-\item [C3] \begin{equation} PresenceOf(N^{in}[orig(a),a,0]) = 0 \end{equation}
-\item [C4] \begin{equation} PresenceOf(N^{out}[dest(a),a,l-1]) = 0 \end{equation}
-\item [C4] \begin{equation}\begin{split} \forall x \in V, \forall k \in {0,...,l-1}, x \neq orig(a) \lor k \neq 0: \\ PresenceOf(N[x,a,k]) \iff PresenceOf(N^{in}[x,a,k]) \end{split}\end{equation}
-\item [C5] \begin{equation}\begin{split} \forall x \in V, \forall k \in {0,...,l-1}, x \neq dest(a) \lor k \neq l-1: \\ PresenceOf(N[x,a,k]) \iff PresenceOf(N^{out}[x,a,k]) \end{split}\end{equation}
-=======
 In order to simplify the implementation of constraints we created two different interval variables to represent $A[x,y,a,k]$ and $A[x,x,a,k]$.
->>>>>>> 8ae8184e400875a2288372f54022b5f783df7320
 
 We now introduce constraints on these variables:
 
