@@ -18,15 +18,15 @@ ROWS = 3
 COLUMNS = 3
 number_of_agents = 3
 upper_bound = 10
-graph = "intersection_graph"
+graph_type = "intersection_graph"
 
-agents, edges, shortest_path = environments(ROWS, COLUMNS, number_of_agents, graph)
+agents, edges, shortest_path = environments(ROWS, COLUMNS, number_of_agents, graph_type)
 
-agents = [(0, 0), (0, 1), (2, 1)]
+agents = [(0, 1), (1, 2), (2, 0)]
 
-check, RET, num_layers = solving_MAPF(agents, edges, upper_bound, shortest_path)
+check, RET, num_layers,solve_time, memory_usage, number_of_conflicts, decisions = solving_MAPF(agents, edges, upper_bound, shortest_path)
 
 if check:
-    _, mksp = run_CPLEX(edges, agents, RET, num_layers)
+    _, mksp, solve_time, memory_usage, number_of_conflicts, decisions = run_CPLEX(edges, agents, RET, num_layers)
 else:
     print("unsatisfiable")

@@ -205,12 +205,15 @@ def run_CPLEX(edges, agents, upper_bound, num_layers):
     # try / catch block because model.solve() returns an exception if the problem is unsatisfiable
     result = model.solve()
     solution = result.solution
+    solve_time = result.solveTime
 
     if result.solve_status != "Infeasible":
+        memory_usage = result.solver_infos["PeakMemoryUsage"] * pow(10, -6)
+        number_of_conflicts = result.solver_infos["NumberOfFails"]
+        decisions = result.solver_infos["NumberOfChoicePoints"]
         # Solve model
         print("Solving model...")
         print("\n\nSolution with makespan %d:" % solution["MKSP"])
-
         for name, var in solution.var_solutions_dict.items():
             if type(name) == str and type(var) == CpoIntervalVarSolution and var.is_present():
                 # Use regex to extract from the name the type of the variable and the agent involved
@@ -236,10 +239,10 @@ def run_CPLEX(edges, agents, upper_bound, num_layers):
             if agent in ae_result:
                 print_sorted_list_of_intervals(ae_result[agent])
 
-        return True, solution["MKSP"]
+        return True, solution["MKSP"], solve_time, memory_usage, number_of_conflicts, decisions
 
     else:
-        return False, -1
+        return False, -1, solve_time, None, None, None
 
 
 
@@ -268,12 +271,12 @@ def solving_MAPF(agents, edges, upper_bound, shortest_path):
 
     num_layers = 1
 
-    check, ret = run_CPLEX(edges, agents, upper_bound, num_layers)
+    check, ret, solve_time, memory_usage, number_of_conflicts, decisions = run_CPLEX(edges, agents, upper_bound, num_layers)
 
     while check is False and num_layers < upper_bound:
-        check, ret = run_CPLEX(edges, agents, upper_bound, num_layers)
+        check, ret, solve_time, memory_usage, number_of_conflicts, decisions = run_CPLEX(edges, agents, upper_bound, num_layers)
         num_layers += 1
 
     num_layers = round((ret - shortest_path) / 2 + 1)
 
-    return check, ret, num_layers
+    return check, ret, num_layers, solve_time, memory_usage, number_of_conflicts, decisions

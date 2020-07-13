@@ -213,14 +213,18 @@ def run_Z3(edges, agents, makespan):
     sep = "============================="
     print("Makespan %d: %s" % (makespan, s.check()))
     if s.check() == sat:
+        statistics = s.statistics()
         print(sep + "\nAssertions:")
         print(s.assertions())
         print(sep + "\nStatistics:")
-        print(s.statistics())
-
+        print(statistics)
         model = s.model()
         # print(sep + "\nModel:")
         # print(model)
+
+        memory_usage = statistics.get_key_value('max memory')
+        number_of_conflicts = statistics.get_key_value('conflicts')
+        decisions = statistics.get_key_value('decisions')
 
         print("\n\n" + sep + "\nPaths:")
         for agent in range(agents_len):
@@ -241,5 +245,5 @@ def run_Z3(edges, agents, makespan):
                         if is_true(r):
                             print("pass(%d, %d, %d, %d)" % (vertex, neighbor, agent, time))
         print(sep)
-        return True
-    return False
+        return True, memory_usage, number_of_conflicts, decisions
+    return False, None, None, None
