@@ -232,12 +232,13 @@ def run_CPLEX(edges, agents, upper_bound, num_layers):
 
             if agent in n_result:
                 print_sorted_list_of_intervals(n_result[agent])
-
+            """
             if agent in a_result:
                 print_sorted_list_of_intervals(a_result[agent])
 
             if agent in ae_result:
                 print_sorted_list_of_intervals(ae_result[agent])
+            """
 
         return True, solution["MKSP"], solve_time, memory_usage, number_of_conflicts, decisions
 

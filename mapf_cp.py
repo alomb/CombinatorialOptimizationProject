@@ -1,29 +1,19 @@
+import networkx as nx
+
 from solvers.model_cp import solving_MAPF, run_CPLEX
 from environments.environments import environments
 
-# ======================================================================================================================
-# Variables and constants
-# ======================================================================================================================
-
-""""
-# agents = [(0, 2), (2, 3), (3, 0)]
-# agents = [(0, 3), (3, 0)]
-
-#   4
-# 01235
-#edges = [{0, 1}, {1, 0, 2}, {1, 2, 3, 4}, {2, 3, 5}, {2, 4}, {3, 5}]
+"""
+This file allows to call to a specific graph the CP-based solution based on IBM CPLEX.
 """
 
-ROWS = 3
-COLUMNS = 3
-number_of_agents = 1
-upper_bound = 10
-graph_type = "intersection_graph"
+number_of_agents = 2
+UPPER_BOUND = 10
 
-agents, edges, shortest_path = environments(number_of_agents, graph_type, rows=ROWS, columns=COLUMNS)
+agents, edges, shortest_path = environments(nx.grid_2d_graph, [(0, 1), (1, 0)], n=2, m=2)
 
 check, RET, num_layers, solve_time, memory_usage, number_of_conflicts, decisions = \
-    solving_MAPF(agents, edges, upper_bound, shortest_path)
+    solving_MAPF(agents, edges, UPPER_BOUND, shortest_path)
 
 if check:
     _, mksp, solve_time, memory_usage, number_of_conflicts, decisions = \

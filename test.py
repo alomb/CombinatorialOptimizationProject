@@ -1,21 +1,26 @@
-from solvers.model_smt import run_Z3
-from solvers.model_cp import run_CPLEX, solving_MAPF
-from environments.environments import environments
 import time
 import numpy as np
 import matplotlib.pyplot as plt
+import networkx as nx
 
-# TODO: understand how to get solver statistics to plot them
+from solvers.model_smt import run_Z3
+from solvers.model_cp import run_CPLEX, solving_MAPF
+from environments.environments import environments
+
+MIN_SIZE = 4
+MAX_SIZE = 6
 
 
-def test(rows, columns, max_size, graph_type):
+def extensive_test(num_agents):
+    """
+    Test different environments usually increasing difficulty by means of graph size and number of agents.
+
+    :param num_agents: the list containing for each graph the number of agents
+    :return:
     """
 
-    :param rows
-    :param columns
-    :param max_size
-    :param graph_type
-    """
+    if len(num_agents) != MAX_SIZE - MIN_SIZE + 1:
+        raise ValueError("sizes and number of agents must be equal.")
 
     time_CPLEX = []
     time_Z3 = []
@@ -26,26 +31,27 @@ def test(rows, columns, max_size, graph_type):
     decisions_Z3 = []
     decisions_CPLEX = []
 
-    size_range = np.linspace(rows, max_size, max_size - rows + 1)
+    size = MIN_SIZE
 
     env_index = 1
     sep = "=" * 50
 
-    while rows <= max_size:
-
-        print(sep)
-        print("ENVIRONMENT %d" % env_index)
-        print(sep)
-        env_index += 1
+    while size <= MAX_SIZE:
 
         makespan = 0
-        upper_bound = 2 * rows
-        number_of_agents = rows
+        upper_bound = 2 * size
+        number_of_agents = num_agents[env_index - 1]
 
-        agents, edges, shortest_path = environments(number_of_agents, graph_type, rows=rows, columns=columns)
+        print(sep)
+        try:
+            agents, edges, shortest_path = environments(nx.grid_2d_graph, number_of_agents, n=size, m=size)
+        except Exception as e:
+            print(e)
+            return
 
-        # ----------------------------------------------------------------------------------------------------------------------
+        print("ENVIRONMENT %d (%d agents and %d vertices)" % (env_index, number_of_agents, len(edges)))
 
+        # --------------------------------------------------------------------------------------------------------------
         # Z3
         print(sep)
         print("Z3")
@@ -64,6 +70,7 @@ def test(rows, columns, max_size, graph_type):
         number_of_conflicts_Z3.append(number_of_conflicts)
         decisions_Z3.append(decisions)
 
+        # --------------------------------------------------------------------------------------------------------------
         # CPLEX
         print(sep)
         print("CPLEX")
@@ -75,15 +82,15 @@ def test(rows, columns, max_size, graph_type):
         else:
             print("CPLEX: unsatisfiable")
 
-        print("="*50)
+        print(sep)
 
         time_CPLEX.append(solve_time)
         memory_usage_CPLEX.append(memory_usage)
         number_of_conflicts_CPLEX.append(number_of_conflicts)
         decisions_CPLEX.append(decisions)
 
-        rows += 1
-        columns += 1
+        size += 1
+        env_index += 1
 
     """
     Statistics:
@@ -95,6 +102,7 @@ def test(rows, columns, max_size, graph_type):
     """
 
     fig, ax = plt.subplots(2, 2)
+    size_range = np.linspace(MIN_SIZE, MAX_SIZE, MAX_SIZE - MIN_SIZE + 1)
 
     fig.suptitle("Z3 vs CPLEX")
     ax[0, 0].plot(size_range, time_Z3, "-b", label='Z3')
@@ -126,8 +134,4 @@ def test(rows, columns, max_size, graph_type):
     plt.show()
 
 
-ROWS = 2
-COLUMNS = 2
-MAX_SIZE = 5
-
-test(ROWS, COLUMNS, MAX_SIZE, "grid_2d_graph")
+extensive_test([i for i in range(MIN_SIZE, MAX_SIZE + 1)])

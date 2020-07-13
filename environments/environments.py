@@ -3,26 +3,23 @@ import matplotlib.pyplot as plt
 import random
 
 
-def environments(number_of_agents, graph_type, **kwargs):
+def environments(graph_function, agents, **kwargs):
     """
     Create an environment from a NetworkX graph.
 
-    :param number_of_agents: the number of agents
-    :param graph_type: one of the following string
-        "grid_2d_graph"
-        "intersection_graph"
-        "karate_club_graph"
-    :return: list of agents' positions, list of neighbors for each vertex and the minimum shortest path
+    :param graph_function: a function that returns a NetworkX graph, can be a customized one or one belonging to
+    the wide range of predefined functions of the NetworkX library. Parameters are passed with the named
+    argument **kwargs
+    :param agents: the number of agents or the list containing origin and destination of each agent. In the former case
+    the positions will be computed randomly.
+
+    :return list of agents' positions, list of neighbors for each vertex and the minimum shortest path
+
+    :raise may generate an exception if the parameter of the NetworkX graph are not correct ot the number of agents is
+    too big
     """
 
-    if graph_type == "grid_2d_graph":
-        graph = nx.grid_2d_graph(kwargs["rows"], kwargs["columns"])
-    elif graph_type == "intersection_graph":
-        graph = nx.uniform_random_intersection_graph(kwargs["rows"], kwargs["columns"], 1)
-    elif graph_type == "karate_club_graph":
-        graph = nx.karate_club_graph()
-    else:
-        raise ValueError("Graph type not found.")
+    graph = graph_function(**kwargs)
 
     graph = nx.convert_node_labels_to_integers(graph)
 
@@ -34,7 +31,14 @@ def environments(number_of_agents, graph_type, **kwargs):
         for neighbor, _ in neighbors.items():
             edges[node].add(neighbor)
 
-    agents = generate_agents(edges, number_of_agents)
+    if type(agents) is int:
+        agents = generate_agents(edges, agents)
+    elif type(agents) is not list:
+        raise Exception("agents must be an integer or a list of tuples.")
+    else:
+        for a in agents:
+            if type(a) is not tuple:
+                raise Exception("agents must be a list of tuples.")
 
     shortest_paths = []
 
@@ -45,6 +49,7 @@ def environments(number_of_agents, graph_type, **kwargs):
     [print(str(node) + ": " + str(neighbors)) for node, neighbors in enumerate(edges)]
     print("AGENTS: ")
     print(agents)
+
     """
     nx.draw(graph, with_labels=True)
     plt.show()
@@ -60,6 +65,8 @@ def generate_agents(edges, number_of_agents):
     :param edges: the list of neighbors for each vertex
     :param number_of_agents: the number of agents
     :return: a list of length number_of_agents, containing for each agent its origin and destination
+
+    :raise an exception when the number of agents is too big to fit in the graph
     """
 
     if number_of_agents * 2 > len(edges):
