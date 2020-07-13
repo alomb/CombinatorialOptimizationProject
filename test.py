@@ -1,4 +1,3 @@
-import time
 import numpy as np
 import matplotlib.pyplot as plt
 import networkx as nx
@@ -38,16 +37,18 @@ def extensive_test(num_agents):
 
     while size <= MAX_SIZE:
 
-        makespan = 0
         upper_bound = 2 * size
         number_of_agents = num_agents[env_index - 1]
 
         print(sep)
         try:
-            agents, edges, shortest_path = environments(nx.grid_2d_graph, number_of_agents, n=size, m=size)
+            agents, edges, min_shortest_path, max_shortest_path = \
+                environments(nx.grid_2d_graph, number_of_agents, n=size, m=size)
         except Exception as e:
             print(e)
             return
+
+        makespan = max_shortest_path
 
         print("ENVIRONMENT %d (%d agents and %d vertices)" % (env_index, number_of_agents, len(edges)))
 
@@ -55,17 +56,13 @@ def extensive_test(num_agents):
         # Z3
         print(sep)
         print("Z3")
-        start = time.time()
-        check, memory_usage, number_of_conflicts, decisions = run_Z3(edges, agents, makespan)
-        end = time.time()
+        check, solve_time, memory_usage, number_of_conflicts, decisions = run_Z3(edges, agents, makespan)
 
         while not check and makespan <= upper_bound:
             makespan += 1
-            start = time.time()
-            check, memory_usage, number_of_conflicts, decisions = run_Z3(edges, agents, makespan)
-            end = time.time()
+            check, solve_time, memory_usage, number_of_conflicts, decisions = run_Z3(edges, agents, makespan)
 
-        time_Z3.append(end - start)
+        time_Z3.append(solve_time)
         memory_usage_Z3.append(memory_usage)
         number_of_conflicts_Z3.append(number_of_conflicts)
         decisions_Z3.append(decisions)
@@ -75,7 +72,7 @@ def extensive_test(num_agents):
         print(sep)
         print("CPLEX")
         check, ret, num_layers, solve_time, memory_usage, number_of_conflicts, decisions = \
-            solving_MAPF(agents, edges, upper_bound, shortest_path)
+            solving_MAPF(agents, edges, upper_bound, min_shortest_path)
 
         if check:
             _, _, solve_time, memory_usage, number_of_conflicts, decisions = run_CPLEX(edges, agents, ret, num_layers)

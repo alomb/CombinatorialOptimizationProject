@@ -8,9 +8,10 @@ This file allows to call to a specific graph the CP-based solution based on IBM 
 """
 
 number_of_agents = 2
-UPPER_BOUND = 10
+SIZE = 5
+UPPER_BOUND = SIZE * 2
 
-agents, edges, shortest_path = environments(nx.grid_2d_graph, [(0, 1), (1, 0)], n=2, m=2)
+agents, edges, shortest_path, _ = environments(nx.grid_2d_graph, [(0, 1), (1, 0)], n=SIZE, m=SIZE)
 
 check, RET, num_layers, solve_time, memory_usage, number_of_conflicts, decisions = \
     solving_MAPF(agents, edges, UPPER_BOUND, shortest_path)

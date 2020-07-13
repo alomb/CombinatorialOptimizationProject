@@ -1,8 +1,20 @@
-from docplex.cp.model import *
 import re
+
+from docplex.cp.model import *
 
 
 def run_CPLEX(edges, agents, upper_bound, num_layers):
+    """
+    Create a MAPF Solver sing CPLEX.
+
+    :param edges: list of OrderedDict containing for each agent (whose identifier is the index of this list) its
+    neighbors
+    :param agents: list of tuples containing origins and destinations
+    :param upper_bound: the maximum value that interval variables can assume, it represents the maximum makespan
+    possible
+    :param num_layers: the number of layers, useful for an agent to visit multiple times a vertex
+    :return True when a plan has been found, time to build the model, memory usage, number of conflicts and decisions
+    """
 
     model = CpoModel()
     agents_len = len(agents)
@@ -259,9 +271,8 @@ def print_sorted_list_of_intervals(intervals):
 
 
 def solving_MAPF(agents, edges, upper_bound, shortest_path):
-
     """
-    PROBLEM: condition added num_layers < upper_bound to replace the satisfiability check of PaS algorithm
+    TODO: condition added num_layers < upper_bound to replace the satisfiability check of PaS algorithm
     :param agents:
     :param edges:
     :param upper_bound:

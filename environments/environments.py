@@ -13,7 +13,8 @@ def environments(graph_function, agents, **kwargs):
     :param agents: the number of agents or the list containing origin and destination of each agent. In the former case
     the positions will be computed randomly.
 
-    :return list of agents' positions, list of neighbors for each vertex and the minimum shortest path
+    :return list of agents' positions, list of neighbors for each vertex and the minimum and maximum shortest path
+    lengths
 
     :raise may generate an exception if the parameter of the NetworkX graph are not correct ot the number of agents is
     too big
@@ -55,7 +56,7 @@ def environments(graph_function, agents, **kwargs):
     plt.show()
     """
 
-    return agents, edges, min(shortest_paths)
+    return agents, edges, min(shortest_paths), max(shortest_paths)
 
 
 def generate_agents(edges, number_of_agents):

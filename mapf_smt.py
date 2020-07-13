@@ -7,17 +7,17 @@ from environments.environments import environments
 This file allows to call to a specific graph the SMT-based solution based on Z3Py.
 """
 
-# Makespan: time steps (from 0 to makespan_size - 1)
-makespan = 0
-
 # Maximum makespan
-UPPER_BOUND = 10
+SIZE = 5
+UPPER_BOUND = SIZE * 2
 
-number_of_agents = 2
-agents, edges, _ = environments(nx.grid_2d_graph, number_of_agents, n=5, m=5)
+number_of_agents = 10
+agents, edges, _, max_shortest_path = environments(nx.grid_2d_graph, number_of_agents, n=SIZE, m=SIZE)
 
-check, memory_usage, number_of_conflicts, decisions = run_Z3(edges, agents, makespan)
+makespan = max_shortest_path
+
+check, _, memory_usage, number_of_conflicts, decisions = run_Z3(edges, agents, makespan)
 
 while not check and makespan <= UPPER_BOUND:
     makespan += 1
-    check, memory_usage, number_of_conflicts, decisions = run_Z3(edges, agents, makespan)
+    check, _, memory_usage, number_of_conflicts, decisions = run_Z3(edges, agents, makespan)

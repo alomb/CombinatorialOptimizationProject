@@ -38,15 +38,15 @@ pass_ = Function('pass', IntSort(), IntSort(), IntSort(), IntSort(), BoolSort())
 
 def run_Z3(edges, agents, makespan):
     """
-    Create the model and tries to solve it.
+    Create a MAPF solver using Z3Py.
 
     :param edges: list of OrderedDict containing for each agent (whose identifier is the index of this list) its
     neighbors
     :param agents: list of tuples containing origins and destinations
     :param makespan: the minimal time step that satisfies the problem
-    :return True when a plan has been found
+    :return True when a plan has been found, time to build the model, memory usage, number of conflicts and decisions
     """
-    # TODO: verbosity control
+    import time
 
     edges_len = len(edges)
     agents_len = len(agents)
@@ -66,6 +66,7 @@ def run_Z3(edges, agents, makespan):
     # Variables and summations
     # ==================================================================================================================
 
+    start_time = time.time()
     s = Solver()
 
     # Edges definitions
@@ -216,6 +217,8 @@ def run_Z3(edges, agents, makespan):
         statistics = s.statistics()
         model = s.model()
 
+        elapsed_time = time.time() - start_time
+
         """
         print(sep + "\nAssertions:")
         print(s.assertions())
@@ -249,5 +252,5 @@ def run_Z3(edges, agents, makespan):
                             print("pass(%d, %d, %d, %d)" % (vertex, neighbor, agent, time))
         """
         print(sep)
-        return True, memory_usage, number_of_conflicts, decisions
-    return False, None, None, None
+        return True, elapsed_time, memory_usage, number_of_conflicts, decisions
+    return False, None, None, None, None
