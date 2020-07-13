@@ -203,11 +203,11 @@ def run_CPLEX(edges, agents, upper_bound, num_layers):
     ae_result = dict()
 
     # try / catch block because model.solve() returns an exception if the problem is unsatisfiable
-    result = model.solve()
+    result = model.solve(log_output=None)
     solution = result.solution
     solve_time = result.solveTime
 
-    if result.solve_status != "Infeasible":
+    if result.is_solution_optimal():
         memory_usage = result.solver_infos["PeakMemoryUsage"] * pow(10, -6)
         number_of_conflicts = result.solver_infos["NumberOfFails"]
         decisions = result.solver_infos["NumberOfChoicePoints"]
@@ -245,7 +245,6 @@ def run_CPLEX(edges, agents, upper_bound, num_layers):
         return False, -1, solve_time, None, None, None
 
 
-
 def print_sorted_list_of_intervals(intervals):
     """
     Print the list interval variables sorted in increasing order. Those that start and end before have the precedence.
@@ -271,10 +270,12 @@ def solving_MAPF(agents, edges, upper_bound, shortest_path):
 
     num_layers = 1
 
-    check, ret, solve_time, memory_usage, number_of_conflicts, decisions = run_CPLEX(edges, agents, upper_bound, num_layers)
+    check, ret, solve_time, memory_usage, number_of_conflicts, decisions = \
+        run_CPLEX(edges, agents, upper_bound, num_layers)
 
     while check is False and num_layers < upper_bound:
-        check, ret, solve_time, memory_usage, number_of_conflicts, decisions = run_CPLEX(edges, agents, upper_bound, num_layers)
+        check, ret, solve_time, memory_usage, number_of_conflicts, decisions = \
+            run_CPLEX(edges, agents, upper_bound, num_layers)
         num_layers += 1
 
     num_layers = round((ret - shortest_path) / 2 + 1)

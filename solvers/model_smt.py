@@ -51,7 +51,6 @@ def run_Z3(edges, agents, makespan):
     edges_len = len(edges)
     agents_len = len(agents)
 
-
     if edges_len <= 0:
         raise ArgumentError("The graph must not be empty")
     if any([vertex not in range(edges_len) for neighbors in edges for vertex in neighbors]):
@@ -124,7 +123,7 @@ def run_Z3(edges, agents, makespan):
     # Each neighbor of a certain vertex, in a specific time for a specific agent is mapped to:
     # 1 if there is a true pass() between it and the vertex set of neighbors
     # 0 otherwise
-    sum5_tmp = [[[list(map(lambda n: If(pass_(vertex, n, agent, time), 1, 0), edges[vertex]))#.keys()))
+    sum5_tmp = [[[list(map(lambda n: If(pass_(vertex, n, agent, time), 1, 0), edges[vertex]))
                   for vertex in range(edges_len)]
                  for time in range(makespan)]
                 for agent in range(agents_len)]
@@ -210,23 +209,27 @@ def run_Z3(edges, agents, makespan):
     # Execution
     # ==================================================================================================================
 
-    sep = "============================="
+    sep = "-"*50
     print("Makespan %d: %s" % (makespan, s.check()))
     if s.check() == sat:
+
         statistics = s.statistics()
+        model = s.model()
+
+        """
         print(sep + "\nAssertions:")
         print(s.assertions())
         print(sep + "\nStatistics:")
         print(statistics)
-        model = s.model()
-        # print(sep + "\nModel:")
-        # print(model)
+        print(sep + "\nModel:")
+        print(model)
+        """
 
         memory_usage = statistics.get_key_value('max memory')
         number_of_conflicts = statistics.get_key_value('conflicts')
         decisions = statistics.get_key_value('decisions')
 
-        print("\n\n" + sep + "\nPaths:")
+        print(sep + "\nPaths:")
         for agent in range(agents_len):
             print("Agent %d:" % agent)
             for time in range(makespan + 1):
@@ -234,7 +237,7 @@ def run_Z3(edges, agents, makespan):
                     r = model.evaluate(at_(vertex, agent, time))
                     if is_true(r):
                         print("at(%d, %d, %d)" % (vertex, agent, time))
-
+        """
         print(sep + "\nMovements:")
         for agent in range(agents_len):
             print("Agent %d (until makespan - 1 steps):" % agent)
@@ -244,6 +247,7 @@ def run_Z3(edges, agents, makespan):
                         r = model.evaluate(pass_(vertex, neighbor, agent, time))
                         if is_true(r):
                             print("pass(%d, %d, %d, %d)" % (vertex, neighbor, agent, time))
+        """
         print(sep)
         return True, memory_usage, number_of_conflicts, decisions
     return False, None, None, None

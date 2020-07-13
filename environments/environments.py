@@ -3,16 +3,27 @@ import matplotlib.pyplot as plt
 import random
 
 
-def environments(rows, columns, number_of_agents, graph_type):
+def environments(number_of_agents, graph_type, **kwargs):
+    """
+    Create an environment from a NetworkX graph.
+
+    :param number_of_agents: the number of agents
+    :param graph_type: one of the following string
+        "grid_2d_graph"
+        "intersection_graph"
+        "karate_club_graph"
+    :return: list of agents' positions, list of neighbors for each vertex and the minimum shortest path
+    """
 
     if graph_type == "grid_2d_graph":
-        graph = nx.grid_2d_graph(rows, columns)
-    if graph_type == "intersection_graph":
-        graph = nx.uniform_random_intersection_graph(rows, columns, 1)
-    if graph_type == "karate_club_graph":
+        graph = nx.grid_2d_graph(kwargs["rows"], kwargs["columns"])
+    elif graph_type == "intersection_graph":
+        graph = nx.uniform_random_intersection_graph(kwargs["rows"], kwargs["columns"], 1)
+    elif graph_type == "karate_club_graph":
         graph = nx.karate_club_graph()
+    else:
+        raise ValueError("Graph type not found.")
 
-    graph = nx.convert_node_labels_to_integers(graph)
     graph = nx.convert_node_labels_to_integers(graph)
 
     edges = []
@@ -24,39 +35,41 @@ def environments(rows, columns, number_of_agents, graph_type):
             edges[node].add(neighbor)
 
     agents = generate_agents(edges, number_of_agents)
-    print(agents)
 
     shortest_paths = []
 
     for agent in agents:
         shortest_paths.append(nx.shortest_path_length(graph, source=agent[0], target=agent[1]))
 
+    print("ENVIRONMENT: ")
     [print(str(node) + ": " + str(neighbors)) for node, neighbors in enumerate(edges)]
-
+    print("AGENTS: ")
+    print(agents)
+    """
     nx.draw(graph, with_labels=True)
     plt.show()
+    """
 
     return agents, edges, min(shortest_paths)
 
 
 def generate_agents(edges, number_of_agents):
+    """
+    Generate random origin and destination for a given number of agents
+
+    :param edges: the list of neighbors for each vertex
+    :param number_of_agents: the number of agents
+    :return: a list of length number_of_agents, containing for each agent its origin and destination
+    """
+
+    if number_of_agents * 2 > len(edges):
+        raise ValueError("There are too many agents.")
 
     agents = []
-    x = []
-    y = []
-    i = 0
+    available_positions = list(range(len(edges)))
 
-    for agent in range(number_of_agents):
-        while len(x) < number_of_agents and len(y) < number_of_agents:
-            x_i = random.randint(0, len(edges) - 1)
-            y_i = random.randint(0, len(edges) - 1)
-
-            if x_i not in x and y_i not in y:
-                x.append(x_i)
-                y.append(y_i)
-
-    while i < len(x):
-        agents.append((x[i], y[i]))
-        i += 1
+    while len(agents) < number_of_agents:
+        agents.append((available_positions.pop(random.randrange(len(available_positions))),
+                       available_positions.pop(random.randrange(len(available_positions)))))
 
     return agents

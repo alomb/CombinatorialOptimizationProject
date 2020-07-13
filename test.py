@@ -1,5 +1,5 @@
-from Z3.model_smt import run_Z3
-from CPLEX.model_cp import run_CPLEX, solving_MAPF
+from solvers.model_smt import run_Z3
+from solvers.model_cp import run_CPLEX, solving_MAPF
 from environments.environments import environments
 import time
 import numpy as np
@@ -9,7 +9,13 @@ import matplotlib.pyplot as plt
 
 
 def test(rows, columns, max_size, graph_type):
+    """
 
+    :param rows
+    :param columns
+    :param max_size
+    :param graph_type
+    """
 
     time_CPLEX = []
     time_Z3 = []
@@ -22,17 +28,27 @@ def test(rows, columns, max_size, graph_type):
 
     size_range = np.linspace(rows, max_size, max_size - rows + 1)
 
+    env_index = 1
+    sep = "=" * 50
+
     while rows <= max_size:
+
+        print(sep)
+        print("ENVIRONMENT %d" % env_index)
+        print(sep)
+        env_index += 1
 
         makespan = 0
         upper_bound = 2 * rows
         number_of_agents = rows
 
-        agents, edges, shortest_path = environments(rows, columns, number_of_agents, graph_type)
+        agents, edges, shortest_path = environments(number_of_agents, graph_type, rows=rows, columns=columns)
 
         # ----------------------------------------------------------------------------------------------------------------------
 
         # Z3
+        print(sep)
+        print("Z3")
         start = time.time()
         check, memory_usage, number_of_conflicts, decisions = run_Z3(edges, agents, makespan)
         end = time.time()
@@ -49,10 +65,13 @@ def test(rows, columns, max_size, graph_type):
         decisions_Z3.append(decisions)
 
         # CPLEX
-        check, RET, num_layers, solve_time, memory_usage, number_of_conflicts, decisions = solving_MAPF(agents, edges, upper_bound, shortest_path)
+        print(sep)
+        print("CPLEX")
+        check, ret, num_layers, solve_time, memory_usage, number_of_conflicts, decisions = \
+            solving_MAPF(agents, edges, upper_bound, shortest_path)
 
         if check:
-            _, _, solve_time, memory_usage, number_of_conflicts, decisions = run_CPLEX(edges, agents, RET, num_layers)
+            _, _, solve_time, memory_usage, number_of_conflicts, decisions = run_CPLEX(edges, agents, ret, num_layers)
         else:
             print("CPLEX: unsatisfiable")
 
@@ -110,6 +129,5 @@ def test(rows, columns, max_size, graph_type):
 ROWS = 2
 COLUMNS = 2
 MAX_SIZE = 5
-graph_type = "karate_club_graph"
 
-test(ROWS, COLUMNS, MAX_SIZE, graph_type)
+test(ROWS, COLUMNS, MAX_SIZE, "grid_2d_graph")
