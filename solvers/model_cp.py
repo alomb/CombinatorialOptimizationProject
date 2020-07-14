@@ -224,8 +224,7 @@ def run_CPLEX(edges, agents, upper_bound, num_layers):
         number_of_conflicts = result.solver_infos["NumberOfFails"]
         decisions = result.solver_infos["NumberOfChoicePoints"]
         # Solve model
-        print("Solving model...")
-        print("\n\nSolution with makespan %d:" % solution["MKSP"])
+        print("Solution with makespan %d:" % solution["MKSP"])
         for name, var in solution.var_solutions_dict.items():
             if type(name) == str and type(var) == CpoIntervalVarSolution and var.is_present():
                 # Use regex to extract from the name the type of the variable and the agent involved

@@ -8,6 +8,7 @@ from environments.environments import environments
 
 MIN_SIZE = 4
 MAX_SIZE = 6
+SEED = 42
 
 
 def extensive_test(num_agents):
@@ -43,7 +44,7 @@ def extensive_test(num_agents):
         print(sep)
         try:
             agents, edges, min_shortest_path, max_shortest_path = \
-                environments(nx.grid_2d_graph, number_of_agents, n=size, m=size)
+                environments(nx.grid_2d_graph, number_of_agents, SEED, n=size, m=size)
         except Exception as e:
             print(e)
             return
@@ -71,9 +72,11 @@ def extensive_test(num_agents):
         # CPLEX
         print(sep)
         print("CPLEX")
+        print("\nStep 1) Searching for optimal number of layers\n")
         check, ret, num_layers, solve_time, memory_usage, number_of_conflicts, decisions = \
             solving_MAPF(agents, edges, upper_bound, min_shortest_path)
 
+        print("\nStep 2) Solving with optimal number of layers\n")
         if check:
             _, _, solve_time, memory_usage, number_of_conflicts, decisions = run_CPLEX(edges, agents, ret, num_layers)
         else:
