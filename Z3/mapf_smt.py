@@ -39,4 +39,3 @@ check, memory_usage, number_of_conflicts, decisions = run_Z3(edges, agents, make
 while not check and makespan <= upper_bound:
     makespan += 1
     check, memory_usage, number_of_conflicts, decisions = run_Z3(edges, agents, makespan)
-

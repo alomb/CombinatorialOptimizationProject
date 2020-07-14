@@ -5,8 +5,6 @@ import time
 import numpy as np
 import matplotlib.pyplot as plt
 
-# TODO: understand how to get solver statistics to plot them
-
 
 def test(rows, columns, max_size, graph_type):
 
