@@ -210,10 +210,6 @@ def run_CPLEX(edges, agents, upper_bound, num_layers):
     # (19) Minimize makespan
     model.add(model.minimize(makespan))
 
-    n_result = dict()
-    a_result = dict()
-    ae_result = dict()
-
     # try / catch block because model.solve() returns an exception if the problem is unsatisfiable
     result = model.solve(log_output=None)
     solution = result.solution
@@ -225,6 +221,13 @@ def run_CPLEX(edges, agents, upper_bound, num_layers):
         decisions = result.solver_infos["NumberOfChoicePoints"]
         # Solve model
         print("Solution with makespan %d:" % solution["MKSP"])
+
+        # Print the model variables
+        """        
+        n_result = dict()
+        a_result = dict()
+        ae_result = dict()
+        
         for name, var in solution.var_solutions_dict.items():
             if type(name) == str and type(var) == CpoIntervalVarSolution and var.is_present():
                 # Use regex to extract from the name the type of the variable and the agent involved
@@ -240,16 +243,38 @@ def run_CPLEX(edges, agents, upper_bound, num_layers):
 
         for agent in range(agents_len):
             print("Agent %d" % agent)
-
+            
             if agent in n_result:
                 print_sorted_list_of_intervals(n_result[agent])
-            """
+
             if agent in a_result:
                 print_sorted_list_of_intervals(a_result[agent])
 
             if agent in ae_result:
                 print_sorted_list_of_intervals(ae_result[agent])
-            """
+        """
+
+        # Print the path for each agent
+
+        agents_path = dict()
+
+        for name, var in solution.var_solutions_dict.items():
+            if type(name) == str and type(var) == CpoIntervalVarSolution and var.is_present():
+                # Use regex to extract from the name the type of the variable, the agent involved and the vertex.
+                tokens = re.split("_", name)
+                if tokens[0] == "N":
+                    # Extract time steps from activity durations
+                    duration = -1
+                    while duration < var.end - var.start:
+                        duration += 1
+                        agents_path.setdefault(int(tokens[2]), {})[var.start + duration] = int(tokens[1])
+
+        # Print the steps of each agent
+        for a in sorted(agents_path.keys()):
+            print("Agent %d:\t" % a, end="")
+            for key in sorted(agents_path[a].keys()):
+                print("%d\t" % agents_path[a][key], end="")
+            print("")
 
         return True, solution["MKSP"], solve_time, memory_usage, number_of_conflicts, decisions
 

@@ -232,6 +232,8 @@ def run_Z3(edges, agents, makespan):
         number_of_conflicts = statistics.get_key_value('conflicts')
         decisions = statistics.get_key_value('decisions')
 
+        # Print model variables
+        """
         print(sep + "\nPaths:")
         for agent in range(agents_len):
             print("Agent %d:" % agent)
@@ -240,7 +242,7 @@ def run_Z3(edges, agents, makespan):
                     r = model.evaluate(at_(vertex, agent, time))
                     if is_true(r):
                         print("at(%d, %d, %d)" % (vertex, agent, time))
-        """
+
         print(sep + "\nMovements:")
         for agent in range(agents_len):
             print("Agent %d (until makespan - 1 steps):" % agent)
@@ -251,6 +253,18 @@ def run_Z3(edges, agents, makespan):
                         if is_true(r):
                             print("pass(%d, %d, %d, %d)" % (vertex, neighbor, agent, time))
         """
+
+        # Print the path for each agent
+        for agent in range(agents_len):
+            print("Agent %d:\t" % agent, end="")
+            for time in range(makespan + 1):
+                for vertex in range(edges_len):
+                    r = model.evaluate(at_(vertex, agent, time))
+                    if is_true(r):
+                        print("%d\t" % vertex, end="")
+                        break
+            print("")
+
         print(sep)
         return True, elapsed_time, memory_usage, number_of_conflicts, decisions
     return False, None, None, None, None

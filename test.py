@@ -1,10 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import networkx as nx
 
 from solvers.model_smt import run_Z3
 from solvers.model_cp import run_CPLEX, solving_MAPF
-from environments.environments import environments
+from environments.environments import *
 
 MIN_SIZE = 4
 MAX_SIZE = 6
@@ -43,8 +42,10 @@ def extensive_test(num_agents):
 
         print(sep)
         try:
-            agents, edges, min_shortest_path, max_shortest_path = \
-                environments(nx.grid_2d_graph, number_of_agents, SEED, n=size, m=size)
+            agents, edges, graph = environments(nx.grid_2d_graph, number_of_agents, SEED, n=size, m=size)
+
+            min_shortest_path, max_shortest_path = min_max_shortest_path(graph, agents)
+
         except Exception as e:
             print(e)
             return
@@ -63,6 +64,9 @@ def extensive_test(num_agents):
             makespan += 1
             check, solve_time, memory_usage, number_of_conflicts, decisions = run_Z3(edges, agents, makespan)
 
+        if not check and makespan >= upper_bound:
+            print("Unsatisfiable")
+
         time_Z3.append(solve_time)
         memory_usage_Z3.append(memory_usage)
         number_of_conflicts_Z3.append(number_of_conflicts)
@@ -76,7 +80,7 @@ def extensive_test(num_agents):
         check, ret, num_layers, solve_time, memory_usage, number_of_conflicts, decisions = \
             solving_MAPF(agents, edges, upper_bound, min_shortest_path)
 
-        print("\nStep 2) Solving with optimal number of layers\n")
+        print("\nStep 2) Solving with %d layers\n" % num_layers)
         if check:
             _, _, solve_time, memory_usage, number_of_conflicts, decisions = run_CPLEX(edges, agents, ret, num_layers)
         else:
@@ -88,6 +92,9 @@ def extensive_test(num_agents):
         memory_usage_CPLEX.append(memory_usage)
         number_of_conflicts_CPLEX.append(number_of_conflicts)
         decisions_CPLEX.append(decisions)
+
+        nx.draw(graph, with_labels=True)
+        plt.show()
 
         size += 1
         env_index += 1

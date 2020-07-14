@@ -1,5 +1,4 @@
 import networkx as nx
-import matplotlib.pyplot as plt
 import random
 
 
@@ -42,20 +41,12 @@ def environments(graph_function, agents, agents_seed, **kwargs):
             if type(a) is not tuple:
                 raise Exception("agents must be a list of tuples.")
 
-    shortest_paths = []
-
-    for agent in agents:
-        shortest_paths.append(nx.shortest_path_length(graph, source=agent[0], target=agent[1]))
-
     print("ENVIRONMENT: ")
     [print(str(node) + ": " + str(neighbors)) for node, neighbors in enumerate(edges)]
     print("AGENTS: ")
     print(agents)
 
-    nx.draw(graph, with_labels=True)
-    plt.show()
-
-    return agents, edges, min(shortest_paths), max(shortest_paths)
+    return agents, edges, graph
 
 
 def generate_agents(edges, number_of_agents, seed=None):
@@ -84,6 +75,20 @@ def generate_agents(edges, number_of_agents, seed=None):
     return agents
 
 
+def min_max_shortest_path(graph, agents):
+    """
+    Compute and return the minimum and maximum shortest path.
+
+    :param graph: the graph
+    :param agents: the source and destination of each agent
+    :return: the minimum and maximum shortest path
+    """
+
+    shortest_paths = [nx.shortest_path_length(graph, source=agent[0], target=agent[1]) for agent in agents]
+
+    return min(shortest_paths), max(shortest_paths)
+
+
 def grid_graph_with_obstacles(probability_obstacle, n, m, seed=None):
     """
     Create a grid graph removing some nodes as if they were obstacles
@@ -103,10 +108,22 @@ def grid_graph_with_obstacles(probability_obstacle, n, m, seed=None):
             to_remove.append(n)
     graph.remove_nodes_from(to_remove)
 
-    return graph
+    return nx.convert_node_labels_to_integers(graph)
 
 
 def generate_dungeon(rooms_num, rooms_size_min, rooms_size_max, corridor_length_min, corridor_length_max, seed=None):
+    """
+    Generate a NetworkX graph representing a dungeon or an indoor environment. Each room is connected with at least
+    another. The corridors may start and end inside rooms, like a stairs between different floors.
+
+    :param rooms_num: number of rooms
+    :param rooms_size_min: minimum room's side length
+    :param rooms_size_max: maximum room's side length
+    :param corridor_length_min: minimum corridor's length
+    :param corridor_length_max: maximum corridor's length
+    :param seed: the random seed
+    :return: a a NetworkX graph representing a dungeon or an indoor environment
+    """
 
     if rooms_num <= 1 or rooms_size_min <= 1 or rooms_size_max <= 1 or corridor_length_min < 1 or\
             corridor_length_max < 0:
