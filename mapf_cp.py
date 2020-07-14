@@ -13,7 +13,7 @@ SIZE = 5
 UPPER_BOUND = 70
 SEED = 40
 
-agents, edges, graph = environments(generate_dungeon, number_of_agents, SEED, rooms_num=3, rooms_size_min=3,
+agents, edges, graph = environments(generate_dungeon, number_of_agents, SEED, rooms_num=2, rooms_size_min=3,
                                     rooms_size_max=3, corridor_length_min=2, corridor_length_max=2,
                                     seed=SEED)
 
