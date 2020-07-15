@@ -46,11 +46,10 @@ def run_CPLEX(edges, agents, upper_bound, num_layers):
               for neighbor in edges[vertex] if vertex != neighbor)
          for vertex in range(edges_len)]
 
-    A_equal = [[[[interval_var(start=(0, upper_bound), end=(0, upper_bound), length=0,
-                               name="Ae_%s_%s_%s_%s" % (vertex, neighbor, agent, layer), optional=True)
-                  for layer in range(num_layers - 1)]
-                 for agent in range(agents_len)]
-                for neighbor in edges[vertex] if vertex == neighbor]
+    A_equal = [[[interval_var(start=(0, upper_bound), end=(0, upper_bound), length=0,
+                              name="Ae_%s_%s_%s_%s" % (vertex, vertex, agent, layer), optional=True)
+                 for layer in range(num_layers - 1)]
+                for agent in range(agents_len)]
                for vertex in range(edges_len)]
 
     # ======================================================================================================================
@@ -94,7 +93,7 @@ def run_CPLEX(edges, agents, upper_bound, num_layers):
     # (7) For each vertex, agent and layer Nin to that vertex requires AT MOST a traverse from one neighbor
     [model.add(
         alternative(Nin[vertex][agent][layer],
-                    [A_equal[vertex][0][agent][layer - 1]] +
+                    [A_equal[vertex][agent][layer - 1]] +
                     [A[neighbor][vertex][agent][layer] for neighbor in edges[vertex].difference({vertex})]
                     if layer > 0 else
                     [A[neighbor][vertex][agent][layer] for neighbor in edges[vertex].difference({vertex})]
@@ -106,7 +105,7 @@ def run_CPLEX(edges, agents, upper_bound, num_layers):
     # (8) For each vertex, agent and layer Nout from that vertex requires AT MOST a traverse to one neighbor
     [model.add(
         alternative(Nout[vertex][agent][layer],
-                    [A_equal[vertex][0][agent][layer]] +
+                    [A_equal[vertex][agent][layer]] +
                     [A[vertex][neighbor][agent][layer] for neighbor in edges[vertex].difference({vertex})]
                     if layer < num_layers - 1 else
                     [A[vertex][neighbor][agent][layer] for neighbor in edges[vertex].difference({vertex})]
@@ -131,13 +130,13 @@ def run_CPLEX(edges, agents, upper_bound, num_layers):
 
     # (11) For each arc (x,x), agent and layer (excluding the last) a traverse implies a Nin in x in the successive
     # layer
-    [model.add(if_then(presence_of(A_equal[vertex][0][agent][layer]), presence_of(Nin[vertex][agent][layer + 1])))
+    [model.add(if_then(presence_of(A_equal[vertex][agent][layer]), presence_of(Nin[vertex][agent][layer + 1])))
      for vertex in range(edges_len)
      for agent in range(agents_len)
      for layer in range(num_layers - 1)]
 
     # (12) For each arc (x,x), agent and layer (excluding the last) a traverse implies a Nout in x
-    [model.add(if_then(presence_of(A_equal[vertex][0][agent][layer]), presence_of(Nout[vertex][agent][layer])))
+    [model.add(if_then(presence_of(A_equal[vertex][agent][layer]), presence_of(Nout[vertex][agent][layer])))
      for vertex in range(edges_len)
      for agent in range(agents_len)
      for layer in range(num_layers - 1)]
