@@ -7,7 +7,7 @@ from environments.environments import *
 
 MIN_SIZE = 2
 MAX_SIZE = 6
-SEED = 40
+SEED = 42
 
 
 def extensive_test(num_agents):

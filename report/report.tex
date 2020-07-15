@@ -7,8 +7,6 @@
 \usepackage{graphicx}
 \usepackage{wrapfig}
 \usepackage[T1]{fontenc}
-\usepackage{hyperref}
-\usepackage{geometry}
 
 \lstset{
 breakindent=0em,
@@ -31,8 +29,6 @@ escapeinside={\%*}{*)},
 breaklines=true,
 linewidth=\textwidth
 }
-
-\newgeometry{vmargin={23mm}, hmargin={23mm, 23mm}}
 
 \begin{document}
 \title{SAT and CP-based approaches for Multi-Agent Pathfinding}
@@ -176,26 +172,27 @@ The model is completed introducing the constraints on the variables:
 % 1.3
 \item All agents can be in one node in every moment:
 \begin{equation}
-\forall a \in A, \forall t \in \{0,\dots,T\}: \displaystyle\sum_{x \in V}At(x,a,t)\leq1
+\forall a \in A, \forall t \in {0,...,T}: \displaystyle\sum_{x \in V}At(x,a,t)\leq1
 \label{eq:1.3}\end{equation}
 
 % 1.4
 \item Every vertex must be occupied at most by an agent in every moment:
 \begin{equation}\begin{split}
-\forall x \in V, \forall t \in \{0,\dots,T\}: \displaystyle\sum_{a \in A}At(x,a,t)\leq1
+\forall x \in V, \forall a \in A, \forall t \in {0,...,T-1}: At(x, a, t) \\ 
+\Rightarrow \displaystyle\sum_{a \in A}At(x,a,t)\leq1
 \end{split}\label{eq:1.4}\end{equation}
 
 % 1.5
 \item If an agent is in a node it needs to leave by one of the outgoing arcs:
 \begin{equation}\begin{split}
-\forall x \in V, \forall a \in A, \forall t \in \{0,..,T-1\}: At(x,a,t) \\
+\forall x \in V, \forall a \in A, \forall t \in {0,..,T-1}: At(x,a,t) \\
 \Rightarrow  \displaystyle\sum_{(x,y) \in E}Pass(x,y,a,t)=1
 \end{split}\label{eq:1.5}\end{equation}
 
 % 1.6
 \item If an agent is using an arc, it must arrive at the corresponding node in the next time step
 \begin{equation}\begin{split}
-\forall (x,y) \in E, \forall a \in A, \forall t \in \{0,\dots,T-1\}: Pass(x,y,a,t) \\
+\forall (x,y) \in E, \forall a \in A, \forall t \in {0,...,T-1}: Pass(x,y,a,t) \\
 \Rightarrow At(y,a,t+1)
 \end{split}\label{eq:1.6}
 \end{equation}
@@ -203,8 +200,8 @@ The model is completed introducing the constraints on the variables:
 % 1.7
 \item Two agents cannot exchange their positions:
 \begin{equation}\begin{split}
-\forall (x,y) \in E, x \neq y, \forall t \in \{0,\dots,T-1\}: \\
-\displaystyle\sum_{a \in A}Pass(x,y,a,t) + Pass(y,x,a,t) \leq 1
+\forall (x,y) \in E, \forall t \in {0,...,T-1}: \\
+\displaystyle\sum_{a \in A, x \neq y}Pass(x,y,a,t) + Pass(y,x,a,t) \leq 1
 \end{split}\label{eq:1.7}\end{equation}
 \end{description}
 
@@ -241,8 +238,7 @@ The other constraints which do not use summations are solved using the Z3 functi
 \begin{lstlisting}[label={lst:1.6}]
 s.add([ForAll([x, y, a, t],
                   Implies(
-                      And(x >= 0, x < edges_len, y >= 0, y < edges_len,
-                          t >= 0, t <= makespan - 1, arc_(x, y),
+                      And(x >= 0, x < edges_len, y >= 0, y < edges_len, t >= 0, t <= makespan - 1, arc_(x, y),
                           pass_(x, y, a, t)),
                       at_(y, a, t + 1)
                   ))])
@@ -260,194 +256,42 @@ We now follow the paper showing how to formalize a MAPF problem as a scheduling 
 Similarly to the authors we implement the model using the Python API of IBM ILOG CPLEX Studio: the library Docplex.
 For this reason, the formal description uses some functions belonging to the grammar of the aforementioned IBM solver.
 IBM ILOG CPLEX allows the definition of activities with interval variables.
-The presence of an agent in a node can be seen as the activity of occupying that node for some amount of time and can be formulated in CPLEX as an interval variables that begins and finishes in a certain moment, represented by the predicates \textit{StartOf} and \textit{EndOf}.
-The difference between the end time and the start time of the activity can be set using the predicate \textit{LengthOf}.
-A great advantage of using interval variables is represented by their optionality, to check whether a certain activity is present or absent in the resulting schedule it is possible to use the predicate \textit{PresenceOf}.
+The presence of an agent in a node can be seen as the activity of occupying that node for some amount of time and can be formulated in CPLEX as an interval variables that begins and finishes in a certain moment, represented by the predicates $StartOf$ and $EndOf$.
+The difference between the end time and the start time of the activity can be set using the predicate $LengthOf$.
+A great advantage of using interval variables is represented by their optionality, to check whether a certain activity is present or absent in the resulting schedule it is possible to use the predicate $PresenceOf$.
 In order to allow each agent to be able to visit the same node several times the authors developed a multi-layer model based on the copy of the original graph with some additional arcs that allow the transition between couples of graphs.
 Let $l$ be the number of layers, namely the maximum number of times each agent can visit the same node.
 In the original paper the layers belong to the set ${1,\dots,l}$, we decided to choose a zero-indexed approach such that our set of layers is ${0,\dots,l-1}$.
 $\forall a \in A, \forall x \in V, \forall k \in {0,...,l-1}$ we considered the following optional activities:
 
 \begin{itemize}
-\item $N[x,a,k]$ corresponds to the time of an agent $a$ spent at node $x$ when the activity starts at layer $k$.
-The start and end of this activity can span all over the available time, the length must be found.
+\item $N[x,a,k]$ corresponds to the time of an agent $a$ spent at node $x$ when the activity starts at layer $k$. The start and end of this activity can span all over the available time, the length must be found.
 \item $N^{in}[x,a,k]$ describes the time spent in the incoming arc at layer $k$.
 \item $N^{out}[x,a,k]$ describes the time spent in the outgoing arc at layer $k$.
-\item $A[x,y,a,k]$ where $k \in {0,...,l-1}$ which corresponds to transiting an agent $a$ from a node $x$ to the node $y$ at layer $k$.
-The start and end of this activity can span all over the available time, the length is set to time required to traverse the arc.
-\item $A[x,x,a,k]$ where $k \in {0,...,l-2}$ which corresponds to transiting an agent $a$ from a node $x$ to the node $x$ at layer $k$.
-The start and end of this activity can span all over the available time, the length is set to zero because arcs between layers are not real.
+\item $A[x,y,a,k]$ where $k \in {0,...,l-1}$ which corresponds to transiting an agent $a$ from a node $x$ to the node $y$ at layer $k$. The start and end of this activity can span all over the available time, the length is set to time required to traverse the arc.
+\item $A[x,x,a,k]$ where $k \in {0,...,l-2}$ which corresponds to transiting an agent $a$ from a node $x$ to the node $x$ at layer $k$. The start and end of this activity can span all over the available time, the length is set to zero because arcs between layers are not real.
 \end{itemize}
 
-We declare the described interval variables inside recursive Python data structures to easy access them using their parametric arguments as indexes.
-For example \textit{N} is built using recursive lists representing in the following order the vertex, agent and layer dimensions, follows that the Pythonic \textit{N[x][a][k]} is equivalent to the formal $N[x,a,k]$.
-On the other hand, we handle differently \textit{A}, because using a list of list is correct until the wanted operations are limited on cycling for each vertex its neighbors and access all of them using the index, which in this case is not the real identifier of the neighbor.
-For example the nodes 5 and 6 are neighbors and \textit{A[4][0][a][k]} represents a movement between these two nodes, there is no way to refer the index 0 to the node 6, it could be for example another neighbor of 5, like the node 3.
-In particular the constraint~\ref{eq:2.7} requires to use the neighbors of each node as origins for the \textit{A} interval variables.
-To overcome this problem, we use a dictionary to explicitly access for an origin in \textit{A} (still represented as an index of the outermost list) its neighbors and their identifiers (keys of the dictionary).
-Recalling the previous example \textit{A[4][6][a][k]} surely represents $A[5,6,a,k]$.
-Probably substituting also the outer list with a dictionary would lead to a more clear model, but we decide to keep it for legacy with the other interval variables.
-In order to simplify the implementation of some constraints we created two different interval variables to represent the following transitions $A[x,y,a,k]$ and $A[x,x,a,k]$.
-Transitions from and to the same node are used by the solver to increase the layer (\ref{eq:2.11}) and to allow multiple visits to the same node by the same agent.
-We represented these transitions defining the interval variables \textit{A\_equal}, which are indexed using only three values as the destination of the transition is always the origin itself and would be redundant.
-Differently from \textit{A} interval variables which may have different lengths depending on the arc, \textit{A\_equal} variables have always length 0.
+In order to simplify the implementation of constraints we created two different interval variables to represent $A[x,y,a,k]$ and $A[x,x,a,k]$.
 
-\begin{lstlisting}[label={lst:variables2}]
-N = [[[interval_var(start=(0, upper_bound),
-                    end=(0, upper_bound),
-                    name="N_%s_%s_%s" % (vertex, agent, layer),
-                    optional=True)
-       for layer in range(num_layers)]
-      for agent in range(agents_len)]
-     for vertex in range(edges_len)]
+We now introduce constraints on these variables:
 
-A = [dict((neighbor, [[interval_var(start=(0, upper_bound),
-                                    end=(0, upper_bound),
-                                    length=1,
-                                    name="A_%s_%s_%s_%s" %
-                                     (vertex, neighbor, agent, layer),
-                                    optional=True)
-                       for layer in range(num_layers)]
-                      for agent in range(agents_len)])
-          for neighbor in edges[vertex] if vertex != neighbor)
-     for vertex in range(edges_len)]
-
-
-A_equal = [[[interval_var(start=(0, upper_bound),
-                          end=(0, upper_bound),
-                          length=0,
-                          name="Ae_%s_%s_%s_%s" %
-                           (vertex, vertex, agent, layer),
-                          optional=True)
-             for layer in range(num_layers - 1)]
-            for agent in range(agents_len)]
-           for vertex in range(edges_len)]
-\end{lstlisting}
-
-Also the variable indicating the final makespan must be declared
-\begin{lstlisting}[label={lst:variablesmakespan}]
-makespan = integer_var(0, upper_bound, name="MKSP")
-\end{lstlisting}
-
-We now introduce the constraints.
-\begin{description}\label{eq:equation_set_2.1}
-% 2.1
+\begin{description}\label{eq:equation_set_2}
 \item \begin{equation} PresenceOf(N[orig(a),a,0]) = 1 \label{eq:2.1}\end{equation}
-% 2.2
 \item \begin{equation} PresenceOf(N[dest(a),a,l-1]) = 1 \label{eq:2.2}\end{equation}
-% 2.3
 \item \begin{equation} PresenceOf(N^{in}[orig(a),a,0]) = 0 \label{eq:2.3}\end{equation}
-% 2.4
 \item \begin{equation} PresenceOf(N^{out}[dest(a),a,l-1]) = 0 \label{eq:2.4}\end{equation}
+\item \begin{equation}\begin{split} \forall x \in V, \forall k \in {0,...,l-1}, x \neq orig(a) \lor k \neq 0: \\ PresenceOf(N[x,a,k]) \iff PresenceOf(N^{in}[x,a,k]) \end{split}\label{eq:2.5}\end{equation}
+\item \begin{equation}\begin{split} \forall x \in V, \forall k \in {0,...,l-1}, x \neq dest(a) \lor k \neq l-1: \\ PresenceOf(N[x,a,k]) \iff PresenceOf(N^{out}[x,a,k]) \end{split}\label{eq:2.6}\end{equation}
 \end{description}
-
-As already mentioned the formal representation is very similar to the implementation, for example the following constraints are almost identical to the formal definitions.
-
-\begin{lstlisting}[label={lst:eq2.1-2.4}]
-[model.add(presence_of(N[pair[0]][a][0]) == 1)
- for a, pair in enumerate(agents)]
-[model.add(presence_of(N[pair[1]][a][num_layers - 1]) == 1)
- for a, pair in enumerate(agents)]
-[model.add(presence_of(Nin[pair[0]][a][0]) == 0)
- for a, pair in enumerate(agents)]
-[model.add(presence_of(Nout[pair[1]][a][num_layers - 1]) == 0)
- for a, pair in enumerate(agents)]
-\end{lstlisting}
-
-For this reason we decide to not comment all the constraints.
-
-\begin{description}\label{eq:equation_set_2.2}
-% 2.5
-\item \begin{equation}\begin{split} \forall x \in V, \forall k \in \{0,\dots,l-1\}, x \neq orig(a) \lor k \neq 0: \\ PresenceOf(N[x,a,k]) \iff PresenceOf(N^{in}[x,a,k]) \end{split}\label{eq:2.5}\end{equation}
-% 2.6
-\item \begin{equation}\begin{split} \forall x \in V, \forall k \in \{0,\dots,l-1\}, x \neq dest(a) \lor k \neq l-1: \\ PresenceOf(N[x,a,k]) \iff PresenceOf(N^{out}[x,a,k]) \end{split}\label{eq:2.6}\end{equation}
-% 2.7
-\item \begin{equation}\begin{split} \forall x \in V, \forall k \in \{0,\dots,l-1\}: \\ Alternative(N^{in}[x,a,k], \{A[x,x,a,k-1]\} \cup \bigcup_{(y,x) \in E} A[y,x,a,k]) \end{split}\label{eq:2.7}\end{equation}
-\end{description}
-
-An interesting and already mentioned constraint is the~\ref{eq:2.7}.
-Similarly to~\ref{eq:2.8} it defines the correct cardinality in which interval variables \textit{Nin}, \textit{A} and \textit{A\_equal} must be bound in the solution.
-In particular, for each activity in the arcs incoming on a specific vertex, for an agent on a given layer there must be at most one traverse, possibly between different layers, if the layer is not the first, or from a neighbor occurring in the same layer.
-To avoid indexes out of bound exceptions a control must be performed on the layer and a different constraint may be added to the model.
-
-\begin{lstlisting}[label={lst:eq2.7}]
-[model.add(
-alternative(Nin[vertex][agent][layer],
-            [A_equal[vertex][0][agent][layer - 1]] +
-            [A[neighbor][vertex][agent][layer]
-             for neighbor in edges[vertex].difference({vertex})]
-            if layer > 0 else
-            [A[neighbor][vertex][agent][layer]
-             for neighbor in edges[vertex].difference({vertex})]
-            ))
-for layer in range(num_layers)
-for agent in range(agents_len)
-for vertex in range(edges_len)]
-\end{lstlisting}
-
-\begin{description}\label{eq:equation_set_2.3}
-% 2.8
-\item \begin{equation}\begin{split} \forall x \in V, \forall k \in \{0,\dots,l-1\}: \\ Alternative(N^{out}[x,a,k], \{A[x,x,a,k]\} \cup \bigcup_{(x,y) \in E} A[x,y,a,k]) \end{split}\label{eq:2.8}\end{equation}
-% 2.9
-\item \begin{equation}\begin{split} \forall (x,y) \in E, \forall k \in \{0,\dots,l-1\}: \\ PresenceOf(A[x,y,a,k]) \Rightarrow PresenceOf(N^{in}[y,a,k]) \end{split}\label{eq:2.9}\end{equation}
-% 2.10
-\item \begin{equation}\begin{split} \forall (x,y) \in E, \forall k \in \{0,\dots,l-1\}: \\ PresenceOf(A[x,y,a,k]) \Rightarrow PresenceOf(N^{out}[x,a,k]) \end{split}\label{eq:2.10}\end{equation}
-% 2.11
-\item \begin{equation}\begin{split} \forall x \in V, \forall k \in \{0,\dots,l-2\}: \\ PresenceOf(A[x,x,a,k]) \Rightarrow PresenceOf(N^{in}[x,a,k+1]) \end{split}\label{eq:2.11}\end{equation}
-% 2.12
-\item \begin{equation}\begin{split} \forall x \in V, \forall k \in \{0,\dots,l-2\}: \\ PresenceOf(A[x,x,a,k]) \Rightarrow PresenceOf(N^{out}[x,a,k]) \end{split}\label{eq:2.12}\end{equation}
-% 2.13
-\item \begin{equation} StartOf(N[orig(a),a,0]) = 0 \label{eq:2.13}\end{equation}
-% 2.14
-\item \begin{equation} EndOf(N[dest(a),a,l-1]) = MKSP \label{eq:2.14}\end{equation}
-% 2.15
-\item \begin{equation}\begin{split} \forall x \in V, \forall k \in \{0,\dots,l-1\}, x \neq orig(a) \lor k \neq 0: \\ StartOf(N[x,a,k]) = EndOf(N^{in}[x,a,k]) \end{split}\label{eq:2.15}\end{equation}
-% 2.16
-\item \begin{equation}\begin{split} \forall x \in V, \forall k \in \{0,\dots,l-1\}, x \neq dest(a) \lor k \neq l-1: \\ EndOf(N[x,a,k]) = StartOf(N^{out}[x,a,k]) \end{split}\label{eq:2.16}\end{equation}
-% 2.17
-\item \begin{equation}\begin{split} \forall x \in V: \\ NoOverlap(\bigcup_{a \in A, k \in \{1,\dots,l-1\}} N[x,a,k])\end{split}\label{eq:2.17}\end{equation}
-\end{description}
-
-The constraint~\ref{eq:2.17} represents another interesting case.
-The \textit{no\_overlap} function constrains a set of interval variables not to overlap each others.
-By default (like in the~\ref{eq:2.18} implementation) it can receive a list of interval variables and it will constraint them to not overlap and to be at least distant one to another (the difference between the start of one and end of another, where the former succeeds the latter) zero.
-In order to modify this behavior we pass a \textit{sequence\_var} containing the interval variables and we create a transition matrix which represents for each combination of variables the minimum distance they must maintain.
-
-\begin{lstlisting}[label={lst:minimize2}]
-tm_size = num_layers * agents_len
-tm = transition_matrix(tm_size)
-
-for i in range(tm_size):
-    for j in range(tm_size):
-        if j not in range((i // num_layers) * num_layers, (i // num_layers) * num_layers + num_layers):
-            tm.set_value(i, j, 1)
-
-[model.add(no_overlap(sequence_var([N[vertex][agent][layer]
-                                    for agent in range(agents_len)
-                                    for layer in range(num_layers)]), tm))
- for vertex in range(edges_len)]
-\end{lstlisting}
-
-For a specific vertex (notice the outer loop on vertices) the same agent can occupy the same node in different layers with a distance between each possible pair at minimum 0, because traversing layers is not a real movement and occurs immediately.
-On the other hand, between different agents in the same or different layers, the distance between possible pairs must be at least 1.
-
-\begin{description}\label{eq:equation_set_2.4}
-% 2.18
-\item \begin{equation}\begin{split} \forall (x, y) \in E: \\ NoOverlap(\bigcup_{a \in A, k \in \{1,\dots,l-1\}} \{A[x,y,a,k], A[y,x,a,k]\})\end{split}\label{eq:2.18}\end{equation}
-\end{description}
-
-Finally a minimization constraint is added for the makespan variable.
-\begin{lstlisting}[label={lst:minimize2}]
-model.add(model.minimize(makespan))
-\end{lstlisting}
-
+    
 \section{Results}\label{sec:results}
 This section is dedicated to the description and analysis of the results we obtained from the tests.
 The aim is to compare the two approaches that we have previously described to solve the MAPF problem,
 in particular, we used the following performance parameters:
 
 \begin{description}
-    \item $solving_time$: measured in seconds.
+    \item $time_solving$: measured in seconds.
     \item $memory_{usage}$: memory occupied in MB.
     \item $n_{conflicts}$: number of conflicts.
     \item $n_{decision}$: number of decision points.
@@ -472,16 +316,16 @@ of the performance of these two approaches, according to the parameters describe
 with the optimal $num_{layers}$ for the SMT-based approach, and with the maekespan which returns the first
 feasible solution, for the SAT-based approach. Finally, a test can be briefly described like this:
 \begin{enumerate}
-    \item Graph generation with NetworkX
-    \item Choice of the number of agents according to a certain criterion (for example proportional to the number of nodes in the graph) and random choice of the departure and arrival node for each
-    \item Execution of the resolution algorithms for both approaches described above
-    \item Storage of performance parameters of the two algorithms executed with the optimal parameters
-    \item Increase in the size of the graph up to a predetermined $MAX_{SIZE}$ (in some tests)
-    \item Plot of the results
+    \item Graph generation with NetworkX.
+    \item Choice of the number of agents according to a certain criterion (for example proportional to the number of nodes in the graph) and random choice of the departure and arrival node for each.
+    \item Execution of the resolution algorithms for both approaches described above.
+    \item Storage of performance parameters of the two algorithms executed with the optimal parameters.
+    \item Increase in the size of the graph up to a predetermined $MAX_{SIZE}$ (in some tests).
+    \item Plot of the results.
 \end{enumerate}
-From an implementation point of view we have developed an interface that would allow us to perform various tests in a flexible way.
+From an implementation point of view we have developed an interface that would allow us to perform various tests in a flexible way, in particular allowing us
+to choose the type of graph, its size and the number of agents.
 \subsection{Testing}\label{subsec:testing}
-The first test was performed on a two-dimensional grid generated by NetworkX by varying the size from $MIN_SIZE=2$ to $MAX_SIZE=6$.
-Also the number of agents varies with the size of the graph, in particular following the relationship $n_agents = SIZE_i$ where $SIZE_i$ is the size of the graph in step $i$.
-This is to evaluate the performance of the two approaches to increasing the the complexity of the problem which, in general, is proportional to the size of the graph and the number of agents.
+The first test was performed on a two-dimensional grid generated by NetworkX by varying the size from $MIN_SIZE=2$ to $MAX_SIZE=6$ with $seed=42$. Also the number of agents varies with the size of the graph, in particular following the relationship $n_agents = SIZE_i$ where $SIZE_i$ is the size of the graph in step $i$. This is to evaluate the performance of the two approaches to increasing the the complexity of the problem which, in general, is proportional to the size of the graph and the number of agents. 
+
 \end{document}

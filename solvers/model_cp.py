@@ -216,7 +216,7 @@ def run_CPLEX(edges, agents, upper_bound, num_layers):
 
     if result.is_solution_optimal():
         memory_usage = result.solver_infos["PeakMemoryUsage"] * pow(10, -6)
-        number_of_conflicts = result.solver_infos["NumberOfFails"]
+        number_of_conflicts = result.solver_infos["FailDepthCount"]
         decisions = result.solver_infos["NumberOfChoicePoints"]
         # Solve model
         print("Solution with makespan %d:" % solution["MKSP"])
