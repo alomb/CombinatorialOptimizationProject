@@ -287,8 +287,9 @@ To overcome this problem, we use a dictionary to explicitly access for an origin
 Recalling the previous example \textit{A[4][6][a][k]} surely represents $A[5,6,a,k]$.
 Probably substituting also the outer list with a dictionary would lead to a more clear model, but we decide to keep it for legacy with the other interval variables.
 In order to simplify the implementation of some constraints we created two different interval variables to represent the following transitions $A[x,y,a,k]$ and $A[x,x,a,k]$.
-Interval variables \textit{A\_equal} are almost identical to \textit{A} but they regards only transitions between the same node and have length always 0.
-Is important to notice that the destination is represented as a list, but its dimension has always length 1 since each node is equal only to itself.
+Transitions from and to the same node are used by the solver to increase the layer (\ref{eq:2.11}) and to allow multiple visits to the same node by the same agent.
+We represented these transitions defining the interval variables \textit{A\_equal}, which are indexed using only three values as the destination of the transition is always the origin itself and would be redundant.
+Differently from \textit{A} interval variables which may have different lengths depending on the arc, \textit{A\_equal} variables have always length 0.
 
 \begin{lstlisting}[label={lst:variables2}]
 N = [[[interval_var(start=(0, upper_bound),
@@ -311,15 +312,14 @@ A = [dict((neighbor, [[interval_var(start=(0, upper_bound),
      for vertex in range(edges_len)]
 
 
-A_equal = [[[[interval_var(start=(0, upper_bound),
-                           end=(0, upper_bound),
-                           length=0,
-                           name="Ae_%s_%s_%s_%s" %
-                            (vertex, neighbor, agent, layer),
-                           optional=True)
-              for layer in range(num_layers - 1)]
-             for agent in range(agents_len)]
-            for neighbor in edges[vertex] if vertex == neighbor]
+A_equal = [[[interval_var(start=(0, upper_bound),
+                          end=(0, upper_bound),
+                          length=0,
+                          name="Ae_%s_%s_%s_%s" %
+                           (vertex, vertex, agent, layer),
+                          optional=True)
+             for layer in range(num_layers - 1)]
+            for agent in range(agents_len)]
            for vertex in range(edges_len)]
 \end{lstlisting}
 
