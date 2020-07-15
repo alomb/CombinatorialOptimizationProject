@@ -1,4 +1,4 @@
-from Z3.model_smt import run_Z3
+from solvers.model_smt import run_Z3
 from environments.environments import environments
 
 

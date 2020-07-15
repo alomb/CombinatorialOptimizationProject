@@ -38,19 +38,18 @@ pass_ = Function('pass', IntSort(), IntSort(), IntSort(), IntSort(), BoolSort())
 
 def run_Z3(edges, agents, makespan):
     """
-    Create the model and tries to solve it.
+    Create a MAPF solver using Z3Py.
 
     :param edges: list of OrderedDict containing for each agent (whose identifier is the index of this list) its
     neighbors
     :param agents: list of tuples containing origins and destinations
     :param makespan: the minimal time step that satisfies the problem
-    :return True when a plan has been found
+    :return True when a plan has been found, time to build the model, memory usage, number of conflicts and decisions
     """
-    # TODO: verbosity control
+    import time
 
     edges_len = len(edges)
     agents_len = len(agents)
-
 
     if edges_len <= 0:
         raise ArgumentError("The graph must not be empty")
@@ -67,6 +66,7 @@ def run_Z3(edges, agents, makespan):
     # Variables and summations
     # ==================================================================================================================
 
+    start_time = time.time()
     s = Solver()
 
     # Edges definitions
@@ -124,7 +124,7 @@ def run_Z3(edges, agents, makespan):
     # Each neighbor of a certain vertex, in a specific time for a specific agent is mapped to:
     # 1 if there is a true pass() between it and the vertex set of neighbors
     # 0 otherwise
-    sum5_tmp = [[[list(map(lambda n: If(pass_(vertex, n, agent, time), 1, 0), edges[vertex]))#.keys()))
+    sum5_tmp = [[[list(map(lambda n: If(pass_(vertex, n, agent, time), 1, 0), edges[vertex]))
                   for vertex in range(edges_len)]
                  for time in range(makespan)]
                 for agent in range(agents_len)]
@@ -210,23 +210,31 @@ def run_Z3(edges, agents, makespan):
     # Execution
     # ==================================================================================================================
 
-    sep = "============================="
+    sep = "-"*50
     print("Makespan %d: %s" % (makespan, s.check()))
     if s.check() == sat:
+
         statistics = s.statistics()
+        model = s.model()
+
+        elapsed_time = time.time() - start_time
+
+        """
         print(sep + "\nAssertions:")
         print(s.assertions())
         print(sep + "\nStatistics:")
         print(statistics)
-        model = s.model()
-        # print(sep + "\nModel:")
-        # print(model)
+        print(sep + "\nModel:")
+        print(model)
+        """
 
         memory_usage = statistics.get_key_value('max memory')
         number_of_conflicts = statistics.get_key_value('conflicts')
         decisions = statistics.get_key_value('decisions')
 
-        print("\n\n" + sep + "\nPaths:")
+        # Print model variables
+        """
+        print(sep + "\nPaths:")
         for agent in range(agents_len):
             print("Agent %d:" % agent)
             for time in range(makespan + 1):
@@ -244,6 +252,19 @@ def run_Z3(edges, agents, makespan):
                         r = model.evaluate(pass_(vertex, neighbor, agent, time))
                         if is_true(r):
                             print("pass(%d, %d, %d, %d)" % (vertex, neighbor, agent, time))
+        """
+
+        # Print the path for each agent
+        for agent in range(agents_len):
+            print("Agent %d:\t" % agent, end="")
+            for time in range(makespan + 1):
+                for vertex in range(edges_len):
+                    r = model.evaluate(at_(vertex, agent, time))
+                    if is_true(r):
+                        print("%d\t" % vertex, end="")
+                        break
+            print("")
+
         print(sep)
-        return True, memory_usage, number_of_conflicts, decisions
-    return False, None, None, None
+        return True, elapsed_time, memory_usage, number_of_conflicts, decisions
+    return False, None, None, None, None

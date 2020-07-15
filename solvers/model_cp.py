@@ -1,8 +1,20 @@
-from docplex.cp.model import *
 import re
+
+from docplex.cp.model import *
 
 
 def run_CPLEX(edges, agents, upper_bound, num_layers):
+    """
+    Create a MAPF Solver sing CPLEX.
+
+    :param edges: list of OrderedDict containing for each agent (whose identifier is the index of this list) its
+    neighbors
+    :param agents: list of tuples containing origins and destinations
+    :param upper_bound: the maximum value that interval variables can assume, it represents the maximum makespan
+    possible
+    :param num_layers: the number of layers, useful for an agent to visit multiple times a vertex
+    :return True when a plan has been found, time to build the model, memory usage, number of conflicts and decisions
+    """
 
     model = CpoModel()
     agents_len = len(agents)
@@ -198,22 +210,24 @@ def run_CPLEX(edges, agents, upper_bound, num_layers):
     # (19) Minimize makespan
     model.add(model.minimize(makespan))
 
-    n_result = dict()
-    a_result = dict()
-    ae_result = dict()
-
     # try / catch block because model.solve() returns an exception if the problem is unsatisfiable
-    result = model.solve()
+    result = model.solve(log_output=None)
     solution = result.solution
     solve_time = result.solveTime
 
-    if result.solve_status != "Infeasible":
+    if result.is_solution_optimal():
         memory_usage = result.solver_infos["PeakMemoryUsage"] * pow(10, -6)
         number_of_conflicts = result.solver_infos["NumberOfFails"]
         decisions = result.solver_infos["NumberOfChoicePoints"]
         # Solve model
-        print("Solving model...")
-        print("\n\nSolution with makespan %d:" % solution["MKSP"])
+        print("Solution with makespan %d:" % solution["MKSP"])
+
+        # Print the model variables
+        """        
+        n_result = dict()
+        a_result = dict()
+        ae_result = dict()
+        
         for name, var in solution.var_solutions_dict.items():
             if type(name) == str and type(var) == CpoIntervalVarSolution and var.is_present():
                 # Use regex to extract from the name the type of the variable and the agent involved
@@ -229,7 +243,7 @@ def run_CPLEX(edges, agents, upper_bound, num_layers):
 
         for agent in range(agents_len):
             print("Agent %d" % agent)
-
+            
             if agent in n_result:
                 print_sorted_list_of_intervals(n_result[agent])
 
@@ -238,12 +252,34 @@ def run_CPLEX(edges, agents, upper_bound, num_layers):
 
             if agent in ae_result:
                 print_sorted_list_of_intervals(ae_result[agent])
+        """
+
+        # Print the path for each agent
+
+        agents_path = dict()
+
+        for name, var in solution.var_solutions_dict.items():
+            if type(name) == str and type(var) == CpoIntervalVarSolution and var.is_present():
+                # Use regex to extract from the name the type of the variable, the agent involved and the vertex.
+                tokens = re.split("_", name)
+                if tokens[0] == "N":
+                    # Extract time steps from activity durations
+                    duration = -1
+                    while duration < var.end - var.start:
+                        duration += 1
+                        agents_path.setdefault(int(tokens[2]), {})[var.start + duration] = int(tokens[1])
+
+        # Print the steps of each agent
+        for a in sorted(agents_path.keys()):
+            print("Agent %d:\t" % a, end="")
+            for key in sorted(agents_path[a].keys()):
+                print("%d\t" % agents_path[a][key], end="")
+            print("")
 
         return True, solution["MKSP"], solve_time, memory_usage, number_of_conflicts, decisions
 
     else:
         return False, -1, solve_time, None, None, None
-
 
 
 def print_sorted_list_of_intervals(intervals):
@@ -259,9 +295,8 @@ def print_sorted_list_of_intervals(intervals):
 
 
 def solving_MAPF(agents, edges, upper_bound, shortest_path):
-
     """
-    PROBLEM: condition added num_layers < upper_bound to replace the satisfiability check of PaS algorithm
+    TODO: condition added num_layers < upper_bound to replace the satisfiability check of PaS algorithm
     :param agents:
     :param edges:
     :param upper_bound:
@@ -271,10 +306,12 @@ def solving_MAPF(agents, edges, upper_bound, shortest_path):
 
     num_layers = 1
 
-    check, ret, solve_time, memory_usage, number_of_conflicts, decisions = run_CPLEX(edges, agents, upper_bound, num_layers)
+    check, ret, solve_time, memory_usage, number_of_conflicts, decisions = \
+        run_CPLEX(edges, agents, upper_bound, num_layers)
 
     while check is False and num_layers < upper_bound:
-        check, ret, solve_time, memory_usage, number_of_conflicts, decisions = run_CPLEX(edges, agents, upper_bound, num_layers)
+        check, ret, solve_time, memory_usage, number_of_conflicts, decisions = \
+            run_CPLEX(edges, agents, upper_bound, num_layers)
         num_layers += 1
 
     num_layers = round((ret - shortest_path) / 2 + 1)

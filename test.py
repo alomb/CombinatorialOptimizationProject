@@ -1,13 +1,25 @@
-from Z3.model_smt import run_Z3
-from CPLEX.model_cp import run_CPLEX, solving_MAPF
-from environments.environments import environments
-import time
 import numpy as np
 import matplotlib.pyplot as plt
 
+from solvers.model_smt import run_Z3
+from solvers.model_cp import run_CPLEX, solving_MAPF
+from environments.environments import *
 
-def test(rows, columns, max_size, graph_type):
+MIN_SIZE = 2
+MAX_SIZE = 6
+SEED = 40
 
+
+def extensive_test(num_agents):
+    """
+    Test different environments usually increasing difficulty by means of graph size and number of agents.
+
+    :param num_agents: the list containing for each graph the number of agents
+    :return:
+    """
+
+    if len(num_agents) != MAX_SIZE - MIN_SIZE + 1:
+        raise ValueError("sizes and number of agents must be equal.")
 
     time_CPLEX = []
     time_Z3 = []
@@ -18,51 +30,74 @@ def test(rows, columns, max_size, graph_type):
     decisions_Z3 = []
     decisions_CPLEX = []
 
-    size_range = np.linspace(rows, max_size, max_size - rows + 1)
+    size = MIN_SIZE
 
-    while rows <= max_size:
+    env_index = 1
+    sep = "=" * 50
 
-        makespan = 0
-        upper_bound = 2 * rows
-        number_of_agents = rows
+    while size <= MAX_SIZE:
 
-        agents, edges, shortest_path = environments(rows, columns, number_of_agents, graph_type)
+        upper_bound = 2 * size
+        number_of_agents = num_agents[env_index - 1]
 
-        # ----------------------------------------------------------------------------------------------------------------------
+        print(sep)
+        try:
+            agents, edges, graph = environments(nx.grid_2d_graph, number_of_agents, SEED, n=size, m=size)
 
+            min_shortest_path, max_shortest_path = min_max_shortest_path(graph, agents)
+
+        except Exception as e:
+            print(e)
+            return
+
+        makespan = max_shortest_path
+
+        print("ENVIRONMENT %d (%d agents and %d vertices)" % (env_index, number_of_agents, len(edges)))
+
+        # --------------------------------------------------------------------------------------------------------------
         # Z3
-        start = time.time()
-        check, memory_usage, number_of_conflicts, decisions = run_Z3(edges, agents, makespan)
-        end = time.time()
+        print(sep)
+        print("Z3")
+        check, solve_time, memory_usage, number_of_conflicts, decisions = run_Z3(edges, agents, makespan)
 
         while not check and makespan <= upper_bound:
             makespan += 1
-            start = time.time()
-            check, memory_usage, number_of_conflicts, decisions = run_Z3(edges, agents, makespan)
-            end = time.time()
+            check, solve_time, memory_usage, number_of_conflicts, decisions = run_Z3(edges, agents, makespan)
 
-        time_Z3.append(end - start)
+        if not check and makespan >= upper_bound:
+            print("Unsatisfiable")
+
+        time_Z3.append(solve_time)
         memory_usage_Z3.append(memory_usage)
         number_of_conflicts_Z3.append(number_of_conflicts)
         decisions_Z3.append(decisions)
 
+        # --------------------------------------------------------------------------------------------------------------
         # CPLEX
-        check, RET, num_layers, solve_time, memory_usage, number_of_conflicts, decisions = solving_MAPF(agents, edges, upper_bound, shortest_path)
+        print(sep)
+        print("CPLEX")
+        print("\nStep 1) Searching for optimal number of layers\n")
+        check, ret, num_layers, solve_time, memory_usage, number_of_conflicts, decisions = \
+            solving_MAPF(agents, edges, upper_bound, min_shortest_path)
 
+        print("\nStep 2) Solving with %d layers\n" % num_layers)
         if check:
-            _, _, solve_time, memory_usage, number_of_conflicts, decisions = run_CPLEX(edges, agents, RET, num_layers)
+            _, _, solve_time, memory_usage, number_of_conflicts, decisions = run_CPLEX(edges, agents, ret, num_layers)
         else:
             print("CPLEX: unsatisfiable")
 
-        print("="*50)
+        print(sep)
 
         time_CPLEX.append(solve_time)
         memory_usage_CPLEX.append(memory_usage)
         number_of_conflicts_CPLEX.append(number_of_conflicts)
         decisions_CPLEX.append(decisions)
 
-        rows += 1
-        columns += 1
+        nx.draw(graph, with_labels=True)
+        plt.show()
+
+        size += 1
+        env_index += 1
 
     """
     Statistics:
@@ -74,6 +109,7 @@ def test(rows, columns, max_size, graph_type):
     """
 
     fig, ax = plt.subplots(2, 2)
+    size_range = np.linspace(MIN_SIZE, MAX_SIZE, MAX_SIZE - MIN_SIZE + 1)
 
     fig.suptitle("Z3 vs CPLEX")
     ax[0, 0].plot(size_range, time_Z3, "-b", label='Z3')
@@ -105,9 +141,4 @@ def test(rows, columns, max_size, graph_type):
     plt.show()
 
 
-ROWS = 2
-COLUMNS = 2
-MAX_SIZE = 5
-graph_type = "karate_club_graph"
-
-test(ROWS, COLUMNS, MAX_SIZE, graph_type)
+extensive_test([i for i in range(MIN_SIZE, MAX_SIZE + 1)])

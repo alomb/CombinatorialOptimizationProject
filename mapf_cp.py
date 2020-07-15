@@ -1,32 +1,39 @@
-from CPLEX.model_cp import run_CPLEX, solving_MAPF
-from environments.environments import environments
+import networkx as nx
+import matplotlib.pyplot as plt
 
-# ======================================================================================================================
-# Variables and constants
-# ======================================================================================================================
+from solvers.model_cp import solving_MAPF, run_CPLEX
+from environments.environments import *
 
-""""
-# agents = [(0, 2), (2, 3), (3, 0)]
-# agents = [(0, 3), (3, 0)]
-
-#   4
-# 01235
-#edges = [{0, 1}, {1, 0, 2}, {1, 2, 3, 4}, {2, 3, 5}, {2, 4}, {3, 5}]
+"""
+This file allows to call to a specific graph the CP-based solution based on IBM CPLEX.
 """
 
-ROWS = 3
-COLUMNS = 3
-number_of_agents = 3
-upper_bound = 10
-graph_type = "intersection_graph"
+number_of_agents = 2
+SIZE = 5
+UPPER_BOUND = 70
+SEED = 40
 
-agents, edges, shortest_path = environments(ROWS, COLUMNS, number_of_agents, graph_type)
+agents, edges, graph = environments(generate_dungeon, number_of_agents, SEED, rooms_num=2, rooms_size_min=3,
+                                    rooms_size_max=3, corridor_length_min=2, corridor_length_max=2,
+                                    seed=SEED)
 
-agents = [(0, 1), (1, 2), (2, 0)]
+min_shortest_path, _ = min_max_shortest_path(graph, agents)
 
-check, RET, num_layers,solve_time, memory_usage, number_of_conflicts, decisions = solving_MAPF(agents, edges, upper_bound, shortest_path)
+sep = "=" * 50
+print(sep)
+print("Step 1) Searching for optimal number of layers")
+print(sep)
+check, RET, num_layers, solve_time, memory_usage, number_of_conflicts, decisions = \
+    solving_MAPF(agents, edges, UPPER_BOUND, min_shortest_path)
 
+print(sep)
+print("Step 2) Solving with %d layers" % num_layers)
+print(sep)
 if check:
-    _, mksp, solve_time, memory_usage, number_of_conflicts, decisions = run_CPLEX(edges, agents, RET, num_layers)
+    _, mksp, solve_time, memory_usage, number_of_conflicts, decisions = \
+        run_CPLEX(edges, agents, RET, num_layers)
 else:
-    print("unsatisfiable")
+    print("Unsatisfiable")
+
+nx.draw(graph, with_labels=True)
+plt.show()
