@@ -5,7 +5,7 @@ from solvers.model_smt import run_Z3
 from solvers.model_cp import run_CPLEX, solving_MAPF
 from environments.environments import *
 
-MIN_SIZE = 4
+MIN_SIZE = 2
 MAX_SIZE = 6
 SEED = 42
 
