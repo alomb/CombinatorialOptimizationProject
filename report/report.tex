@@ -34,9 +34,24 @@ linewidth=\textwidth
 \newgeometry{vmargin={23mm}, hmargin={23mm, 23mm}}
 
 \begin{document}
-\title{SAT and CP-based approaches for Multi-Agent Pathfinding}
-\maketitle
 
+\begin{titlepage}
+%=========================
+\begin{center}
+\hspace{0pt}\\
+\vspace{4cm}
+{\large\bfseries Alessandro Lombardi}\\[5pt]
+{\large\bfseries Fiorenzo Parascandolo}\\
+\vspace{3cm}
+{\LARGE\bfseries SAT and CP-based approaches for Multi-Agent Pathfinding}\\
+\vspace{0.8cm}
+{\Large\bfseries Course on Optimization and Decision Making}\\[10pt]
+% ----------------------------------------------------------------
+\vspace{0.8cm}
+\large University of Bologna\\
+\large Academic Year 2019-2020
+\vfill
+% ----------------------------------------------------------------
 \begin{abstract}
 Multi-Agent Pathfinding (MAPF) is a problem with practical implications in several fields: from robotics and self-driving cars to transportation and logistics.
 The task is to find non-conflicting paths for a set of agents given their starting positions and destinations, usually minimizing a cost function.
@@ -44,6 +59,10 @@ There are many variations on the classical problem and many approaches have been
 In this work we will focus on SAT and CP-based approaches following the paper of R. Barták, J. Švancara and M. Vlk, ``A Scheduling-Based Approach to Multi-Agent Path Finding with Weighted and Capacitated Arcs'', published in Proceedings of the 17th International Conference on Autonomous Agents and MultiAgent Systems.
 As the authors suggest, this type of problem lends itself particularly well to be formalized using a compact set of constraints and we found interesting to developed as a project for our Optimization and Decision Making course.
 \end{abstract}
+\end{center}
+\end{titlepage}
+
+\newpage
 
 \section*{Introduction}\label{sec:introduction}
 \subsection*{A formal and brief overview}
@@ -59,10 +78,9 @@ In the current implementation the main assumptions are:
 \begin{itemize} 
 \item Two agents cannot be found at the same node at the same time.
 \item Two agents cannot exchange their positions.
-\item The moves of the agents are \textbf{discrete} and \textbf{synchronous}.
+\item The moves of the agents are \textbf{discrete} and \textbf{synchronous}.\\
 \end{itemize}
-
-The task is to return a set of actions for each agent, that respects the mentioned constraints and moves each agent to its goal minimizing a cumulative cost function. 
+The task is to return a set of actions for each agent, that respects the mentioned constraints and moves each agent to its goal minimizing a cumulative cost function.
 The literature presents two well-known cost functions:
 
 \begin{itemize}
@@ -94,10 +112,9 @@ Agents are similarly named by indexes of a list of 2-tuples.
 Each tuple contains origin position and destination of a specific agent.
 To easily manipulate and deploy environments we use the powerful NetworkX library.
 
-
-\begin{wrapfigure}[1]{r}{0.7\textwidth}
+\begin{wrapfigure}[1]{r}{0.65\textwidth}
     \centering
-    \includegraphics[width=0.7\textwidth]{environment.png}
+    \includegraphics[width=0.65\textwidth]{environment.png}
 \end{wrapfigure}
 
 \begin{lstlisting}[label={lst:environment}]
@@ -132,7 +149,7 @@ In the original paper the authors introduced a SAT-based approach while this imp
 Satisfiability Modulo Theories (SMT) solvers takes systems in arbitrary format (first-order logic), while SAT solvers are limited to Boolean equations and variables, nevertheless they still mantain the speed and automation of today's Boolean engines.
 The authors of the paper developed their solution using the Picat language, we use the Z3 Solver's Python API: Z3Py.
 The most difficult part is certainly represented by the constraint modeling and their adaptation for the Z3 Theorem Prover.
-Following the original work, we define the following variables as Z3 Boolean Functions:
+Following the original work, we define the following variables as Z3 Boolean Functions in the file solvers/model\_smt:
 
 \begin{itemize}
 \item $\forall x \in V, \forall a \in A, t \in {0, ..., T} : At(x, a, t)$ meaning that agent $a$ is at node $x$ at time step $t$.
@@ -290,6 +307,7 @@ In order to simplify the implementation of some constraints we created two diffe
 Transitions from and to the same node are used by the solver to increase the layer (\ref{eq:2.11}) and to allow multiple visits to the same node by the same agent.
 We represented these transitions defining the interval variables \textit{A\_equal}, which are indexed using only three values as the destination of the transition is always the origin itself and would be redundant.
 Differently from \textit{A} interval variables which may have different lengths depending on the arc, \textit{A\_equal} variables have always length 0.
+The following pieces of code are from the file solvers/model\_cp.py.
 
 \begin{lstlisting}[label={lst:variables2}]
 N = [[[interval_var(start=(0, upper_bound),
@@ -354,6 +372,8 @@ As already mentioned the formal representation is very similar to the implementa
 \end{lstlisting}
 
 For this reason we decide to not comment all the constraints.
+Constraints from~\ref{eq:2.1} to~\ref{eq:2.6} are used to constraint the optionality of some specific interval variables like those representing the presence of an agent at the beginning in its starting position or the bonds between \textit{Nin} or \textit{Nout} and \textit{N} to represent that each time an agent, in a specific layer, is in the incoming or outgoing arcs of a vertex (excluding respectively origin and destination), it has to occupy the vertex.
+Timings between \textit{Nin} or \textit{Nout} and \textit{N} are dealt in the constraints~\ref{eq:2.15} and~\ref{eq:2.16}.
 
 \begin{description}\label{eq:equation_set_2.2}
 % 2.5
@@ -367,7 +387,7 @@ For this reason we decide to not comment all the constraints.
 An interesting and already mentioned constraint is the~\ref{eq:2.7}.
 Similarly to~\ref{eq:2.8} it defines the correct cardinality in which interval variables \textit{Nin}, \textit{A} and \textit{A\_equal} must be bound in the solution.
 In particular, for each activity in the arcs incoming on a specific vertex, for an agent on a given layer there must be at most one traverse, possibly between different layers, if the layer is not the first, or from a neighbor occurring in the same layer.
-To avoid indexes out of bound exceptions a control must be performed on the layer and a different constraint may be added to the model.
+To avoid indexes out of bound exceptions a control must be performed on the layer resulting on the possibility of adding a different constraint to the model.
 
 \begin{lstlisting}[label={lst:eq2.7}]
 [model.add(
@@ -395,6 +415,29 @@ for vertex in range(edges_len)]
 \item \begin{equation}\begin{split} \forall x \in V, \forall k \in \{0,\dots,l-2\}: \\ PresenceOf(A[x,x,a,k]) \Rightarrow PresenceOf(N^{in}[x,a,k+1]) \end{split}\label{eq:2.11}\end{equation}
 % 2.12
 \item \begin{equation}\begin{split} \forall x \in V, \forall k \in \{0,\dots,l-2\}: \\ PresenceOf(A[x,x,a,k]) \Rightarrow PresenceOf(N^{out}[x,a,k]) \end{split}\label{eq:2.12}\end{equation}
+\end{description}
+
+Links between \textit{A}/\textit{A\_equal} and \textit{Nin}/\textit{Nout} interval variables are specified in the constraints~\ref{eq:2.9}-\ref{eq:2.12}.
+In the following implementation is easy to observe the difference between \textit{A} and \textit{A\_equal} and how is useful to divide into two interval variables the activity representing the transitions.
+
+\begin{lstlisting}[label={lst:eq2.9and2.11}]
+# 9
+[model.add(if_then(presence_of(A[vertex][neighbor][agent][layer]),
+                   presence_of(Nin[neighbor][agent][layer])))
+ for vertex in range(edges_len)
+ for neighbor in edges[vertex].difference({vertex})
+ for agent in range(agents_len)
+ for layer in range(num_layers)]
+
+# 11
+[model.add(if_then(presence_of(A_equal[vertex][agent][layer]),
+                   presence_of(Nin[vertex][agent][layer + 1])))
+ for vertex in range(edges_len)
+ for agent in range(agents_len)
+ for layer in range(num_layers - 1)]
+\end{lstlisting}
+
+\begin{description}\label{eq:equation_set_2.4}
 % 2.13
 \item \begin{equation} StartOf(N[orig(a),a,0]) = 0 \label{eq:2.13}\end{equation}
 % 2.14
@@ -430,7 +473,7 @@ for i in range(tm_size):
 For a specific vertex (notice the outer loop on vertices) the same agent can occupy the same node in different layers with a distance between each possible pair at minimum 0, because traversing layers is not a real movement and occurs immediately.
 On the other hand, between different agents in the same or different layers, the distance between possible pairs must be at least 1.
 
-\begin{description}\label{eq:equation_set_2.4}
+\begin{description}\label{eq:equation_set_2.5}
 % 2.18
 \item \begin{equation}\begin{split} \forall (x, y) \in E: \\ NoOverlap(\bigcup_{a \in A, k \in \{1,\dots,l-1\}} \{A[x,y,a,k], A[y,x,a,k]\})\end{split}\label{eq:2.18}\end{equation}
 \end{description}

@@ -1,5 +1,6 @@
 import networkx as nx
 import random
+import matplotlib.pyplot as plt
 
 
 def environments(graph_function, agents, agents_seed, **kwargs):
@@ -146,5 +147,38 @@ def generate_dungeon(rooms_num, rooms_size_min, rooms_size_max, corridor_length_
             path.append(max(graph.nodes) + 1 + p)
 
         nx.add_path(graph, [links[lnk]] + path + [links[lnk + 1]])
+
+    return nx.convert_node_labels_to_integers(graph)
+
+
+def generate_warehouse(rows, columns, shelf_length, corridor_width):
+    """
+    Generate a warehouse style graph
+    :param rows: grid number of rows, direction of the shelves.
+    :param columns: grid number of columns, bigger at least of 2 than the shelf length.
+    :param shelf_length: length of the shelf
+    :param corridor_width: distance between shelves
+    :return: graph
+    """
+    if columns <= 0 or rows <= 0:
+        raise ValueError("Warehouse size is not correct.")
+    if shelf_length <= 0 or shelf_length > columns - 2:
+        raise ValueError("Shelf size is not correct. At least a vertical corridor of width 1 must exist in left and "
+                         "right sides.")
+    if corridor_width <= 0 or corridor_width + 1 > rows - 2:
+        raise ValueError("The corridor width is not correct.")
+
+    corridors_num = rows // (corridor_width + 1)
+    y_offset = (columns - shelf_length) // 2
+    to_remove = []
+    for c in range(corridors_num):
+        for i in range(y_offset, y_offset + shelf_length):
+            to_remove.append((i, 1 + (1 + corridor_width) * c))
+
+    graph = nx.grid_2d_graph(columns, rows)
+    graph.remove_nodes_from(to_remove)
+
+    nx.draw(graph, with_labels=True)
+    plt.show()
 
     return nx.convert_node_labels_to_integers(graph)
