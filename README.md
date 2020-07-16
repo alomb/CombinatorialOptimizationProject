@@ -1,6 +1,6 @@
 Combinatorial Decision Making and Optimization Course Project.
 
-Solving the Multi-Agent Path Finding (MAPF) problem with Constraint Programming and SAT/SMT (Z3Py).
+Solving the Multi-Agent Path Finding (MAPF) problem with Constraint Programming (Docplex) and SAT/SMT (Z3Py).
 
 ###### Manual Setup
 Using Python 3.7 or lower. The indicated versions are those used during the development.
@@ -21,3 +21,7 @@ conda env create -f environment.yml
 &nbsp;
 
 To solve locally with docplex IBM CPLEX® Optimization Studio must be installed on the computer.
+
+An example of execution
+![Gif not reproducible](resources/warehouse.gif)
+
