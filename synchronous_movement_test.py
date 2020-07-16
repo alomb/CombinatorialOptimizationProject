@@ -19,11 +19,11 @@ print(agents)
 sep = "=" * 50
 print(sep)
 print("Z3")
-check, _, _, _, _ = run_Z3(edges, agents, makespan)
+check, _, _, _, _, _ = run_Z3(edges, agents, makespan)
 
 while not check and makespan <= UPPER_BOUND:
     makespan += 1
-    check, _, _, _, _ = run_Z3(edges, agents, makespan)
+    check, _, _, _, _, _ = run_Z3(edges, agents, makespan)
 
 if not check and makespan >= UPPER_BOUND:
     print("Unsatisfiable")
@@ -38,7 +38,7 @@ print(sep)
 print("Step 2) Solving with %d layers" % num_layers)
 print(sep)
 if check:
-    _, mksp, _, _, _, _ = \
+    _, mksp, _, _, _, _, _ = \
         run_CPLEX(edges, agents, RET, num_layers)
 else:
     print("Unsatisfiable")

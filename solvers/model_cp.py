@@ -5,7 +5,7 @@ from docplex.cp.model import *
 
 def run_CPLEX(edges, agents, upper_bound, num_layers):
     """
-    Create a MAPF Solver sing CPLEX.
+    Create a MAPF Solver using CPLEX.
 
     :param edges: list of OrderedDict containing for each agent (whose identifier is the index of this list) its
     neighbors
@@ -13,7 +13,8 @@ def run_CPLEX(edges, agents, upper_bound, num_layers):
     :param upper_bound: the maximum value that interval variables can assume, it represents the maximum makespan
     possible
     :param num_layers: the number of layers, useful for an agent to visit multiple times a vertex
-    :return True when a plan has been found, time to build the model, memory usage, number of conflicts and decisions
+    :return True when a plan has been found, time to build the model, memory usage, number of conflicts and decisions.
+    paths is a list of lists containing paths of each agent.
     """
 
     model = CpoModel()
@@ -268,17 +269,20 @@ def run_CPLEX(edges, agents, upper_bound, num_layers):
                         duration += 1
                         agents_path.setdefault(int(tokens[2]), {})[var.start + duration] = int(tokens[1])
 
+        paths = []
         # Print the steps of each agent
         for a in sorted(agents_path.keys()):
             print("Agent %d:\t" % a, end="")
+            paths.append([])
             for key in sorted(agents_path[a].keys()):
+                paths[a].append(agents_path[a][key])
                 print("%d\t" % agents_path[a][key], end="")
             print("")
 
-        return True, solution["MKSP"], solve_time, memory_usage, number_of_conflicts, decisions
+        return True, solution["MKSP"], solve_time, memory_usage, number_of_conflicts, decisions, paths
 
     else:
-        return False, -1, solve_time, None, None, None
+        return False, -1, solve_time, None, None, None, None
 
 
 def print_sorted_list_of_intervals(intervals):
@@ -296,20 +300,26 @@ def print_sorted_list_of_intervals(intervals):
 def solving_MAPF(agents, edges, upper_bound, shortest_path):
     """
     TODO: condition added num_layers < upper_bound to replace the satisfiability check of PaS algorithm
-    :param agents:
-    :param edges:
-    :param upper_bound:
+    Found the correct number of layers and upperbound. It represents the lines 6-12 of the Algorithm1 in the cited
+    paper.
+
+    :param agents: list of tuples containing origins and destinations
+    :param edges: list of OrderedDict containing for each agent (whose identifier is the index of this list) its
+    neighbors
+    :param upper_bound: the maximum value that interval variables can assume, it represents the maximum makespan
+    possible
     :param shortest_path:
-    :return: check is a boolean parameter to check the satisfiability
+    :return True when a plan has been found, optimal upperbound, optimal number of layers, time to build the model,
+     memory usage, number of conflicts and decisions.
     """
 
     num_layers = 1
 
-    check, ret, solve_time, memory_usage, number_of_conflicts, decisions = \
+    check, ret, solve_time, memory_usage, number_of_conflicts, decisions, _ = \
         run_CPLEX(edges, agents, upper_bound, num_layers)
 
     while check is False and num_layers < upper_bound:
-        check, ret, solve_time, memory_usage, number_of_conflicts, decisions = \
+        check, ret, solve_time, memory_usage, number_of_conflicts, decisions, _ = \
             run_CPLEX(edges, agents, upper_bound, num_layers)
         num_layers += 1
 

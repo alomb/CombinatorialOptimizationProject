@@ -2,8 +2,6 @@ import networkx as nx
 import matplotlib.pyplot as plt
 from matplotlib import animation
 
-from environments.environments import environments, generate_dungeon
-
 
 def animation_update(frame_number, graph, agents_path, seed, ax):
     """
@@ -46,12 +44,13 @@ def animation_update(frame_number, graph, agents_path, seed, ax):
     ax.set_title("Frame %d" % frame_number)
 
 
-def movement_animation(graph, agent_paths, seed):
+def movement_animation(graph, agent_paths, animation_path=None, seed=None):
     """
     Produce an animation on a given graph of given paths
 
     :param graph: the graph
     :param agent_paths: the list of agents paths as lists
+    :param animation_path: a path ending with a .gif file used to save a gif
     :param seed: the seed used to draw the nodes in the same position
     """
 
@@ -80,19 +79,7 @@ def movement_animation(graph, agent_paths, seed):
     ani = animation.FuncAnimation(fig, animation_update, frames=len(agent_paths[0]), interval=1500,
                                   fargs=(graph, agent_paths, seed, ax))
 
-    # ani.save('animation_1.gif', writer='imagemagick')
+    if animation_path is not None:
+        ani.save(animation_path, writer="imagemagick")
 
     plt.show()
-
-
-# Sample data
-SEED = 42
-
-a0 = [14, 13, 12, 13, 14, 11, 19, 19]
-a1 = [17, 14, 11, 19, 18, 3, 4, 1]
-
-_, _, g = environments(generate_dungeon, 2, 40, rooms_num=2, rooms_size_min=3,
-                       rooms_size_max=3, corridor_length_min=2, corridor_length_max=2,
-                       seed=SEED)
-
-movement_animation(g, [a0, a1], SEED)

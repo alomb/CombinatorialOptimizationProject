@@ -1,6 +1,7 @@
 import networkx as nx
 import matplotlib.pyplot as plt
 
+from animation import movement_animation
 from solvers.model_smt import run_Z3
 from environments.environments import *
 
@@ -18,14 +19,19 @@ agents, edges, graph = environments(nx.grid_2d_graph, number_of_agents, SEED, n=
 
 _, makespan = min_max_shortest_path(graph, agents)
 
-check, _, memory_usage, number_of_conflicts, decisions = run_Z3(edges, agents, makespan)
+check, _, memory_usage, number_of_conflicts, decisions, paths = run_Z3(edges, agents, makespan)
 
 while not check and makespan <= UPPER_BOUND:
     makespan += 1
-    check, _, memory_usage, number_of_conflicts, decisions = run_Z3(edges, agents, makespan)
+    check, _, memory_usage, number_of_conflicts, decisions, paths = run_Z3(edges, agents, makespan)
 
 if not check and makespan >= UPPER_BOUND:
     print("Unsatisfiable")
 
+"""
 nx.draw(graph, with_labels=True)
 plt.show()
+"""
+
+if paths is not None:
+    movement_animation(graph, paths, seed=SEED)

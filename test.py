@@ -58,11 +58,11 @@ def extensive_test(num_agents):
         # Z3
         print(sep)
         print("Z3")
-        check, solve_time, memory_usage, number_of_conflicts, decisions = run_Z3(edges, agents, makespan)
+        check, solve_time, memory_usage, number_of_conflicts, decisions, _ = run_Z3(edges, agents, makespan)
 
         while not check and makespan <= upper_bound:
             makespan += 1
-            check, solve_time, memory_usage, number_of_conflicts, decisions = run_Z3(edges, agents, makespan)
+            check, solve_time, memory_usage, number_of_conflicts, decisions, _ = run_Z3(edges, agents, makespan)
 
         if not check and makespan >= upper_bound:
             print("Unsatisfiable")
@@ -82,7 +82,8 @@ def extensive_test(num_agents):
 
         print("\nStep 2) Solving with %d layers\n" % num_layers)
         if check:
-            _, _, solve_time, memory_usage, number_of_conflicts, decisions = run_CPLEX(edges, agents, ret, num_layers)
+            _, _, solve_time, memory_usage, number_of_conflicts, decisions, _ = \
+                run_CPLEX(edges, agents, ret, num_layers)
         else:
             print("CPLEX: unsatisfiable")
 

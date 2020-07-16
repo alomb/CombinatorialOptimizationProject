@@ -1,6 +1,7 @@
 import networkx as nx
 import matplotlib.pyplot as plt
 
+from animation import movement_animation
 from solvers.model_cp import solving_MAPF, run_CPLEX
 from environments.environments import *
 
@@ -29,11 +30,18 @@ check, RET, num_layers, solve_time, memory_usage, number_of_conflicts, decisions
 print(sep)
 print("Step 2) Solving with %d layers" % num_layers)
 print(sep)
+
+paths = None
 if check:
-    _, mksp, solve_time, memory_usage, number_of_conflicts, decisions = \
+    _, mksp, solve_time, memory_usage, number_of_conflicts, decisions, paths = \
         run_CPLEX(edges, agents, RET, num_layers)
 else:
     print("Unsatisfiable")
 
+if paths is not None:
+    movement_animation(graph, paths, seed=SEED)
+
+"""
 nx.draw(graph, with_labels=True)
 plt.show()
+"""

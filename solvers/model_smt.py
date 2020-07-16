@@ -253,18 +253,20 @@ def run_Z3(edges, agents, makespan):
                         if is_true(r):
                             print("pass(%d, %d, %d, %d)" % (vertex, neighbor, agent, time))
         """
-
+        paths = []
         # Print the path for each agent
         for agent in range(agents_len):
+            paths.append([])
             print("Agent %d:\t" % agent, end="")
             for time in range(makespan + 1):
                 for vertex in range(edges_len):
                     r = model.evaluate(at_(vertex, agent, time))
                     if is_true(r):
+                        paths[agent].append(vertex)
                         print("%d\t" % vertex, end="")
                         break
             print("")
 
         print(sep)
-        return True, elapsed_time, memory_usage, number_of_conflicts, decisions
-    return False, None, None, None, None
+        return True, elapsed_time, memory_usage, number_of_conflicts, decisions, paths
+    return False, None, None, None, None, None
