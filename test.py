@@ -6,7 +6,7 @@ from solvers.model_cp import run_CPLEX, solving_MAPF
 from environments.environments import *
 
 MIN_SIZE = 2
-MAX_SIZE = 6
+MAX_SIZE = 5
 SEED = 42
 
 
@@ -51,7 +51,6 @@ def extensive_test(num_agents):
             return
 
         makespan = max_shortest_path
-
         print("ENVIRONMENT %d (%d agents and %d vertices)" % (env_index, number_of_agents, len(edges)))
 
         # --------------------------------------------------------------------------------------------------------------
