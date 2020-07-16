@@ -561,5 +561,35 @@ Agent 2:        2       0
 \subsubsection{Indoor environment}
 
 \subsubsection{Warehouse}
+This is a classical MAPF environment, inspired by real-world autonomous warehouse applications, like those deployed by Amazon.
+The environment represents the generic structure of a warehouse where shelves are positioned parallel one to another forming usually tight corridors where only robot can navigate, making not easy the coordination between the different agents.
+
+\begin{lstlisting}[label={lst:warehouse}]
+AGENTS:
+[(51, 23), (2, 33), (36, 21), (3, 48), (29, 27)]
+==================================================
+Step 1) Searching for optimal number of layers
+==================================================
+Solution with makespan 10:
+Agent 0:        51      41      42      43      34      29      24      18      17      16      23
+Agent 1:        2       3       13      14      22      27      32      39      40      41      33
+Agent 2:        36      35      45      46      47      48      38      37      31      26      21
+Agent 3:        3       4       5       15      14      22      27      32      39      38      48
+Agent 4:        29      24      18      17      16      6       5       15      14      22      27
+==================================================
+Step 2) Solving with 4 layers
+==================================================
+Solution with makespan 9:
+Agent 0:        51      41      33      28      23      16      17      16      23      23
+Agent 1:        2       3       4       14      15      15      16      23      28      33
+Agent 2:        36      37      31      26      21      26      31      26      21      21
+Agent 3:        3       4       14      22      27      32      39      49      48      48
+Agent 4:        29      34      43      42      41      40      40      39      32      27
+\end{lstlisting}
+\begin{figure}
+    \centering
+    \includegraphics[width=0.9\textwidth]{warehouse.png}
+    \caption{A frame of the animation representing 5 agents moving in a $10 \times 7$ warehouse with $4$ shelves and corridors of width $1$.}\label{fig:warehouse}
+\end{figure}
 
 \end{document}

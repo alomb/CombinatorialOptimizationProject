@@ -12,11 +12,17 @@ This file allows to call to a specific graph the CP-based solution based on IBM 
 number_of_agents = 2
 SIZE = 5
 UPPER_BOUND = 70
-SEED = 40
+SEED = 42
 
+"""
 agents, edges, graph = environments(generate_dungeon, number_of_agents, SEED, rooms_num=2, rooms_size_min=3,
                                     rooms_size_max=3, corridor_length_min=2, corridor_length_max=2,
                                     seed=SEED)
+"""
+
+agents, edges, graph = environments(generate_warehouse, [(51, 23), (2, 33), (36, 21), (3, 48), (29, 27)],
+                                    SEED, rows=10, columns=7, shelf_length=3, corridor_width=1)
+
 
 min_shortest_path, _ = min_max_shortest_path(graph, agents)
 
@@ -39,7 +45,7 @@ else:
     print("Unsatisfiable")
 
 if paths is not None:
-    movement_animation(graph, paths, seed=SEED)
+    movement_animation(graph, paths, "./resources/warehouse.gif", seed=SEED)
 
 """
 nx.draw(graph, with_labels=True)

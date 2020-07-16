@@ -33,7 +33,7 @@ def animation_update(frame_number, graph, agents_path, seed, ax):
             graph.nodes[n]['color'] = 'g'
 
     graph = nx.relabel_nodes(graph, relabel_map)
-    layout = nx.spring_layout(graph, seed=seed)
+    layout = nx.spring_layout(graph, iterations=1000, seed=seed)
 
     # create a list for each node of its color
     colors = [node[1]['color'] for node in graph.nodes(data=True)]

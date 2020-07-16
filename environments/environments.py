@@ -1,6 +1,5 @@
 import networkx as nx
 import random
-import matplotlib.pyplot as plt
 
 
 def environments(graph_function, agents, agents_seed, **kwargs):
@@ -177,8 +176,5 @@ def generate_warehouse(rows, columns, shelf_length, corridor_width):
 
     graph = nx.grid_2d_graph(columns, rows)
     graph.remove_nodes_from(to_remove)
-
-    nx.draw(graph, with_labels=True)
-    plt.show()
 
     return nx.convert_node_labels_to_integers(graph)
