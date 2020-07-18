@@ -1,3 +1,4 @@
+from animation import movement_animation
 from environments.environments import *
 from solvers.model_cp import solving_MAPF, run_CPLEX
 from solvers.model_smt import run_Z3
@@ -57,12 +58,13 @@ check, ret, num_layers, _, _, _, _ = \
 print(sep)
 print("\nStep 2) Solving with %d layers\n" % num_layers)
 print(sep)
+paths = None
 if check:
-    _, _, _, _, _, _, _ = \
+    _, _, _, _, _, _, paths = \
         run_CPLEX(edges, agents, ret, num_layers)
 else:
     print("CPLEX: unsatisfiable")
 
 print(sep)
-nx.draw(dungeon, with_labels=True)
-plt.show()
+if paths is not None:
+    movement_animation(dungeon, paths, "./resources/dungeon.gif", seed=SEED)

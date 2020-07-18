@@ -67,6 +67,8 @@ def run_Z3(edges, agents, makespan):
     # ==================================================================================================================
 
     start_time = time.time()
+    # set_param('parallel.enable', True)
+    # set_param('verbose', 10)
     s = Solver()
 
     # Edges definitions

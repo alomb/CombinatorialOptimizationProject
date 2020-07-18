@@ -43,9 +43,9 @@ linewidth=\textwidth
 {\large\bfseries Alessandro Lombardi}\\[5pt]
 {\large\bfseries Fiorenzo Parascandolo}\\
 \vspace{3cm}
-{\LARGE\bfseries SAT and CP-based approaches for Multi-Agent Pathfinding}\\
+{\LARGE\bfseries SAT and CP-based approaches for Multi-Agent Path Finding}\\
 \vspace{0.8cm}
-{\Large\bfseries Course on Optimization and Decision Making}\\[10pt]
+{\Large\bfseries Course on Combinatorial Decision Making and Optimization}\\[10pt]
 % ----------------------------------------------------------------
 \vspace{0.8cm}
 \large University of Bologna\\
@@ -53,11 +53,11 @@ linewidth=\textwidth
 \vfill
 % ----------------------------------------------------------------
 \begin{abstract}
-Multi-Agent Pathfinding (MAPF) is a problem with practical implications in several fields: from robotics and self-driving cars to transportation and logistics.
+Multi-Agent Path Finding (MAPF) is a problem with practical implications in several fields: from robotics and self-driving cars to transportation and logistics.
 The task is to find non-conflicting paths for a set of agents given their starting positions and destinations, usually minimizing a cost function.
 There are many variations on the classical problem and many approaches have been proposed.
-In this work we will focus on SAT and CP-based approaches following the paper of R. Barták, J. Švancara and M. Vlk, ``A Scheduling-Based Approach to Multi-Agent Path Finding with Weighted and Capacitated Arcs'', published in Proceedings of the 17th International Conference on Autonomous Agents and MultiAgent Systems.
-As the authors suggest, this type of problem lends itself particularly well to be formalized using a compact set of constraints and we found interesting to developed as a project for our Optimization and Decision Making course.
+In this work we will focus on SAT and CP-based approaches following the paper of R. Barták, J. Švancara and M. Vlk, ``A Scheduling-Based Approach to Multi-Agent Path Finding with Weighted and Capacitated Arcs'', published in Proceedings of the 17th International Conference on Autonomous Agents and MultiAgent Systems~\cite{10.5555/3237383.3237494}.
+As the authors suggest, this type of problem lends itself particularly well to be formalized using a compact set of constraints and we found interesting to developed as a project for our Combinatorial Decision Making and Optimization course.
 \end{abstract}
 \end{center}
 \end{titlepage}
@@ -71,13 +71,13 @@ The grid can be easily represented as a \textbf{directed graph} so that each age
 Formally, an instance of MAPF can be defined as ordered 4-tuple ($G, A, origin, destination$) where $G = (V, E)$ is a directed graph and $A$ is a set of agents.
 Functional symbols $origin$: A\textrightarrow V and $destination$: A\textrightarrow V describe respectively origin and destination nodes of an agent.
 For each agent $a\in A$, we denote by $origin(a)\in V$ its starting node and by $destination(a)\in V$ its destination node.
-MAPF solvers use the notion of conflict to find a solution during planning.
-MAPF solution is called valid if and only if there is no conflict between any two single-agent plans.
+The word \textbf{conflict} is used to denote any illegal situation on the plan and it is generally in the center of many MAPF Solvers and techniques.
+MAPF solution is called \textbf{valid} if and only if there is no conflict between any two single-agent plans.
 In the current implementation the main assumptions are:
 
 \begin{itemize} 
-\item Two agents cannot be found at the same node at the same time.
-\item Two agents cannot exchange their positions.
+\item Two agents cannot be found at the same node at the same time, \textbf{node collision}.
+\item Two agents cannot exchange their positions, \textbf{edge collision}.
 \item The moves of the agents are \textbf{discrete} and \textbf{synchronous}.\\
 \end{itemize}
 The task is to return a set of actions for each agent, that respects the mentioned constraints and moves each agent to its goal minimizing a cumulative cost function.
@@ -305,7 +305,7 @@ Recalling the previous example \textit{A[4][6][a][k]} surely represents $A[5,6,a
 Probably substituting also the outer list with a dictionary would lead to a more clear model, but we decide to keep it for legacy with the other interval variables.
 In order to simplify the implementation of some constraints we created two different interval variables to represent the following transitions $A[x,y,a,k]$ and $A[x,x,a,k]$.
 Transitions from and to the same node are used by the solver to increase the layer (\ref{eq:2.11}) and to allow multiple visits to the same node by the same agent.
-We represented these transitions defining the interval variables \textit{A\_equal}, which are indexed using only three values as the destination of the transition is always the origin itself and would be redundant.
+We represent these transitions defining the interval variables \textit{A\_equal}, which are indexed using only three values as the destination of the transition is always the origin itself and would be redundant.
 Differently from \textit{A} interval variables which may have different lengths depending on the arc, \textit{A\_equal} variables have always length 0.
 The following pieces of code are from the file solvers/model\_cp.py.
 
@@ -498,31 +498,36 @@ in particular, we used the following performance parameters:
 Let's recall that for the SMT-based approach we used Z3 while we used IBM CP Optimizer for the scheduling approach.
 The latter provides the possibility to perform a parallel search, in this regard we have used 8 workers (default value).
 \subsection{Implementation}\label{subsec:implementation}
-We used the Python package NetworkX for the creation, manipulation of complex networks.
-This framework provides also many standard graph algorithms, like finding an agent's shortest path, which was used in the scheduling-based approach to compute the optimal number of layers.
+We have used the Python package NetworkX for the creation, manipulation of complex networks.
+This library provides also many standard graph algorithms, like finding an agent's shortest path, which was used in the CP-based approach to compute the optimal number of layers and in the SMT-based approach to compute a lower bound.
 For this purpose we have implemented the solving MAPF algorithm described by R. Barták, J. Švancara and M. Vlk with a little variation:
-we used a heuristic upper bound rather than computing it with PaS algorithm and we also used it as upper bound of \textit{num\_layers} in the search cycle of the first feasible solution.
-This is because PaS, in addition to compute the upper bound, performs a first check on the existence of a feasible solution to the problem.
-Since we started from a heuristic upper bound, we moved the control of the existence of a solution introducing, in fact, an upper bound also for the \textit{num\_layers}.
-Instead regarding the SAT-based approach, we used a cycle starting with \textit{makespan = 0} and increasing it until a feasible solution is found.
-In this way we are sure that the first feasible solution found is also the best.
-Therefore the tests we carried out are based on the comparison of the performance of these two approaches, according to the parameters described above, in the execution with the optimal \textit{num\_layers} for the SMT-based approach, and with the maekespan which returns the first feasible solution, for the SAT-based approach.
+we used an heuristic upper bound on the makespan rather than computing it with the Push and Swap (PaS) algorithm and we also used it as upper bound of the number of layers in the search cycle of the first feasible solution.
+This is because PaS, in addition to the upper bound computation, performs a first check on the existence of a feasible solution to the problem.
+Since we started from an heuristic upper bound, we moved the control of the existence of a solution introducing, in fact, an upper bound also for the number of layers.
+Instead, the SMT-based approach cycle the makespan starting with the makespan equal to the maximum shortest path until a feasible solution is found.
+In this way is sure that the first feasible solution found is also the best.
+Therefore we carried out some tests to compare the performance of these two approaches according to the parameters described above.
 Finally, a test can be briefly described like this:
 \begin{enumerate}
     \item Graph generation with NetworkX\@.
-    \item Choice of the number of agents according to a certain criterion (for example proportional to the number of nodes in the graph) and random choice of the departure and arrival node for each.
+    \item Agents generation.
+The number of agents may change according to a certain criterion (for example proportional to the number of nodes in the graph) and departure and arrival nodes may be set randomly or manually for each agent.
     \item Execution of the resolution algorithms for both approaches described above.
     \item Storage of performance parameters of the two algorithms executed with the optimal parameters.
-    \item Increase in the size of the graph up to a predetermined \textit{MAX\_SIZE} (in some tests).
-    \item Plot of the results.
+    \item Depending on the environment, increasing the size of the graph up to a predetermined maximum size.
+    \item Plot of the results using console and Matplotlib to show the static graph or an animation of the agents moving.
 \end{enumerate}
 From an implementation point of view we have developed an interface that would allow us to perform various tests in a flexible way, in particular allowing us to choose the type of graph, its size and the number of agents.
 \subsection{Testing}\label{subsec:testing}
 \subsubsection{Extensive testing}
 The first test was performed on a two-dimensional grid generated by NetworkX by varying the size from \textit{MIN\_SIZE=2} to \textit{MAX\_SIZE=6} with \textit{seed=42}.
 Also the number of agents varies with the size of the graph, in particular following the relationship $n\_agents = SIZE_i$ where $SIZE_i$ is the size of the graph in step $i$.
-This is to evaluate the performance of the two approaches to increasing the the complexity of the problem which, in general, is proportional to the size of the graph and the number of agents. The plot shown in the figure describe the trend of the parameters described above when the size of the graph changes.
-The first consideration is that \textit{time\_solving} and \textit{memory\_usage} increase as the size of the graph, as is easy to expect, however, implementation with CPLEX is faster than Z3 but uses more memory. The reason is that the former performs a parallel search. Another observation that can be made is that the \textit{n\_conflicts} grows as the size of the graph increases and therefore of the memory required for the search space. A high number of conflicts could indicate that the solver tried lots of assignments that did not satisfy the formula so we can conclude that Z3 manage to explore the seach space in the direction of goal better than CPLEX.
+This is to evaluate the performance of the two approaches to increasing the the complexity of the problem which, in general, is proportional to the size of the graph and the number of agents.
+The plot shown in the figure describe the trend of the parameters described above when the size of the graph changes.
+The first consideration is that \textit{time\_solving} and \textit{memory\_usage} increase as the size of the graph, as is easy to expect, however, implementation with CPLEX is faster than Z3 but uses more memory.
+The reason may depend on the is that the former performs a parallel search.
+Another observation that can be made is that the \textit{n\_conflicts} grows as the size of the graph increases and therefore of the memory required for the search space.
+A high number of conflicts could indicate that the solver tried lots of assignments that did not satisfy the formula so we can conclude that Z3 manage to explore the seach space in the direction of goal better than CPLEX.
 \begin{figure}[h!]
 \begin{center}
   \includegraphics[width=16cm]{plot_test.png}\\
@@ -562,11 +567,16 @@ Agent 0:        0       1
 Agent 1:        1       2
 Agent 2:        2       0
 \end{lstlisting}
-    
-\subsubsection{Indoor environment}
+
 \subsubsection{Warehouse}
-This is a classical MAPF environment, inspired by real-world autonomous warehouse applications, like those deployed by Amazon.
+This is a classical MAPF environment, inspired by real-world autonomous warehouse applications, like those deployed in Amazon depots.
 The environment represents the generic structure of a warehouse where shelves are positioned parallel one to another forming usually tight corridors where only robot can navigate, making not easy the coordination between the different agents.
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.9\textwidth]{warehouse.png}
+    \caption{A frame of the animation representing 5 agents moving in a $10 \times 7$ warehouse with $4$ shelves and corridors of width $1$.}
+\end{figure}
 
 \begin{lstlisting}[label={lst:warehouse}]
 AGENTS:
@@ -590,48 +600,70 @@ Agent 2:        36      37      31      26      21      26      31      26      
 Agent 3:        3       4       14      22      27      32      39      49      48      48
 Agent 4:        29      34      43      42      41      40      40      39      32      27
 \end{lstlisting}
-\begin{figure}
-    \centering
-    \includegraphics[width=0.9\textwidth]{warehouse.png}
-    \caption{A frame of the animation representing 5 agents moving in a $10 \times 7$ warehouse with $4$ shelves and corridors of width $1$.}\label{fig:warehouse}
-\end{figure}
+
 \subsubsection{Dungeon}
-Dungeons represent particular areas that are widely used in video games. These can be represented as a set of rooms and corridors such that each room is accessible from only one corridor. In this regard, exploiting NetworkX, we have developed a function for the automatic generation od dungeons specifying:
+Dungeons represent specific environments that are widely used in video games, in particular in the rogue-like genre.
+Dungeons are usually represented as a set of rooms linked by corridors such that each room is accessible from only one or more corridors.
+In real world scenarios they can be useful to simulate indoor environments such as houses and offices.
+In this regard, exploiting NetworkX, we have developed a function for automatic and pseudo-random generation of dungeons environments specifying:
 \begin{description}
-    \item \textit{room\_num}
-    \item \textit{room\_size\_min}
-    \item \textit{room\_size\_max}
-    \item \textit{corridor\_length\_min}
-    \item \textit{corridor\_length\_max}
+    \item \textit{room\_num} the number of rooms
+    \item \textit{room\_size\_min} minimum room size (side length)
+    \item \textit{room\_size\_max} maximum room size (side length)
+    \item \textit{corridor\_length\_min} minimum corridor length
+    \item \textit{corridor\_length\_max} maximum corridor length
 \end{description}
-We performed a test on this type of graph starting from these hypotheses:
+We performed tests on this type of graph starting from these hypotheses:
 \begin{itemize} 
 \item The number of agents must be equal to the number of rooms.
 \item There must be only one agent in each room.
 \item Each agent's goal is in another room
 \end{itemize}
-We consider this test very interesting from a MAPF point of view because the agents have to coordinate to use the corridors which can be traversed at most by an agent.
+We consider this test a very interesting case for the MAPF problem because the agents have to coordinate to use smartly the corridors which can be traversed at most by an agent at a time.
+
 \begin{figure}[h!]
 \begin{center}
-  \includegraphics[width=10cm]{dungeon.png}\\
+    \centering
+    \includegraphics[width=0.7\textwidth]{dungeon.png}
+    \caption{An example of indoor environment.}
 \end{center}
 \end{figure}
+
 \begin{lstlisting}[label={lst:warehouse}]
 AGENTS:
 [(4, 13), (13, 22), (22, 4)]
 ==================================================
+Z3
+==================================================
+Makespan 8: unsat
+Makespan 9: unsat
+Makespan 10: sat
+Agent 0:        4       1       27      28      17      14      14      17      17      14      13
+Agent 1:        13      10      9       10      13      16      17      29      30      19      22
+Agent 2:        22      22      19      30      29      17      28      28      27      1       4
+==================================================
+CPLEX
+==================================================
+
 Step 1) Searching for optimal number of layers
+
 ==================================================
 Solution with makespan 10:
 Agent 0:        4       1       27      28      17      16      13      13      13      13      13
 Agent 1:        13      14      14      14      14      14      17      29      30      19      22
 Agent 2:        22      19      30      29      29      17      28      27      1       4       4
 ==================================================
+
 Step 2) Solving with 3 layers
+
 ==================================================
 Solution with makespan 10:
-Agent 0:        4       1       27      28      17      14      13      13      13      13      13
-Agent 1:        13      16      16      16      16      16      17      29      30      19      22
+Agent 0:        4       1       27      28      17      14      11      10      13      13      13
+Agent 1:        13      12      9       10      13      16      17      29      30      19      22
 Agent 2:        22      19      30      29      29      17      28      27      1       4       4
 \end{lstlisting}
+\nocite{*}
+\bibliography{bibliography}
+\bibliographystyle{plain}
+
 \end{document}
