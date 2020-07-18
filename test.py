@@ -26,9 +26,7 @@ def extensive_test(num_agents):
     memory_usage_Z3 = []
     memory_usage_CPLEX = []
     number_of_conflicts_Z3 = []
-    number_of_conflicts_CPLEX = []
     decisions_Z3 = []
-    decisions_CPLEX = []
 
     size = MIN_SIZE
 
@@ -76,12 +74,12 @@ def extensive_test(num_agents):
         print(sep)
         print("CPLEX")
         print("\nStep 1) Searching for optimal number of layers\n")
-        check, ret, num_layers, solve_time, memory_usage, number_of_conflicts, decisions = \
+        check, ret, num_layers, solve_time, memory_usage, _, _ = \
             solving_MAPF(agents, edges, upper_bound, min_shortest_path)
 
         print("\nStep 2) Solving with %d layers\n" % num_layers)
         if check:
-            _, _, solve_time, memory_usage, number_of_conflicts, decisions, _ = \
+            _, _, solve_time, memory_usage, _, _, _ = \
                 run_CPLEX(edges, agents, ret, num_layers)
         else:
             print("CPLEX: unsatisfiable")
@@ -90,8 +88,6 @@ def extensive_test(num_agents):
 
         time_CPLEX.append(solve_time)
         memory_usage_CPLEX.append(memory_usage)
-        number_of_conflicts_CPLEX.append(number_of_conflicts)
-        decisions_CPLEX.append(decisions)
 
         nx.draw(graph, with_labels=True)
         plt.show()
@@ -111,29 +107,27 @@ def extensive_test(num_agents):
     fig, ax = plt.subplots(2, 2)
     size_range = np.linspace(MIN_SIZE, MAX_SIZE, MAX_SIZE - MIN_SIZE + 1)
 
-    fig.suptitle("Z3 vs CPLEX")
-    ax[0, 0].plot(size_range, time_Z3, "-b", label='Z3')
-    ax[0, 0].plot(size_range, time_CPLEX, "-r", label='CPLEX')
+    ax[0, 0].plot(size_range, number_of_conflicts_Z3, "-b", label='Z3')
     ax[0, 0].set_xlabel("Graph's size")
-    ax[0, 0].set_ylabel("time")
+    ax[0, 0].set_ylabel("Number of conflicts")
     plt.yscale('log')
 
-    ax[0, 1].plot(size_range, memory_usage_Z3, "-b", label='Z3')
-    ax[0, 1].plot(size_range, memory_usage_CPLEX, "-r", label='CPLEX')
+    ax[0, 1].plot(size_range, decisions_Z3, "-b", label='Z3')
     ax[0, 1].set_xlabel("Graph's size")
-    ax[0, 1].set_ylabel("Memory's usage (MB)")
+    ax[0, 1].set_ylabel("Number of decision points")
     plt.yscale('log')
 
-    ax[1, 0].plot(size_range, number_of_conflicts_Z3, "-b", label='Z3')
-    ax[1, 0].plot(size_range, number_of_conflicts_CPLEX, "-r", label='CPLEX')
+    fig.suptitle("Z3 vs CPLEX")
+    ax[1, 0].plot(size_range, time_Z3, "-b", label='Z3')
+    ax[1, 0].plot(size_range, time_CPLEX, "-r", label='CPLEX')
     ax[1, 0].set_xlabel("Graph's size")
-    ax[1, 0].set_ylabel("Number of conflicts")
+    ax[1, 0].set_ylabel("time")
     plt.yscale('log')
 
-    ax[1, 1].plot(size_range, decisions_Z3, "-b", label='Z3')
-    ax[1, 1].plot(size_range, decisions_CPLEX, "-r", label='CPLEX')
+    ax[1, 1].plot(size_range, memory_usage_Z3, "-b", label='Z3')
+    ax[1, 1].plot(size_range, memory_usage_CPLEX, "-r", label='CPLEX')
     ax[1, 1].set_xlabel("Graph's size")
-    ax[1, 1].set_ylabel("Number of decision points")
+    ax[1, 1].set_ylabel("Memory's usage (MB)")
     plt.yscale('log')
 
     plt.legend(loc='best')
