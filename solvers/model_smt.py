@@ -1,5 +1,12 @@
 from z3 import *
 
+"""
+This file contains the SMT-based model of the MAPF problem. Must be executed inside a loop that iteratively increase the
+makespan to obtain an optimal solution.
+
+See mapf_smt.py for a generic example. 
+"""
+
 # ==================================================================================================================
 # Z3 Functions
 # ==================================================================================================================
@@ -221,6 +228,7 @@ def run_Z3(edges, agents, makespan):
 
         elapsed_time = time.time() - start_time
 
+        # Uncomment to print further details
         """
         print(sep + "\nAssertions:")
         print(s.assertions())
@@ -234,7 +242,7 @@ def run_Z3(edges, agents, makespan):
         number_of_conflicts = statistics.get_key_value('conflicts')
         decisions = statistics.get_key_value('decisions')
 
-        # Print model variables
+        # Uncomment to print model variables
         """
         print(sep + "\nPaths:")
         for agent in range(agents_len):

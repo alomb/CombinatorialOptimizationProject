@@ -2,6 +2,13 @@ import re
 
 from docplex.cp.model import *
 
+"""
+This file contains the CP-based model of the MAPF problem. Must be executed inside the algorithm proposed by the authors
+in the cited paper.
+
+See mapf_cp.py for a generic example.
+"""
+
 
 def run_CPLEX(edges, agents, upper_bound, num_layers):
     """
@@ -200,17 +207,16 @@ def run_CPLEX(edges, agents, upper_bound, num_layers):
      for vertex in range(edges_len)]
 
     # (18) Prevent agents from using an arc at the same time (no-swap constraint)
-    [model.add(no_overlap([element for sublist in
+    [model.add(no_overlap([elem for sublist in
                            [[A[vertex][neighbor][agent][layer], A[neighbor][vertex][agent][layer]]
                             for agent in range(agents_len)
-                            for layer in range(num_layers)] for element in sublist]))
+                            for layer in range(num_layers)] for elem in sublist]))
      for vertex in range(edges_len)
      for neighbor in edges[vertex].difference({vertex})]
 
     # (19) Minimize makespan
     model.add(model.minimize(makespan))
 
-    # try / catch block because model.solve() returns an exception if the problem is unsatisfiable
     result = model.solve(log_output=None)
     solution = result.solution
     solve_time = result.solveTime
@@ -255,7 +261,6 @@ def run_CPLEX(edges, agents, upper_bound, num_layers):
         """
 
         # Print the path for each agent
-
         agents_path = dict()
 
         for name, var in solution.var_solutions_dict.items():
@@ -299,18 +304,17 @@ def print_sorted_list_of_intervals(intervals):
 
 def solving_MAPF(agents, edges, upper_bound, shortest_path):
     """
-    TODO: condition added num_layers < upper_bound to replace the satisfiability check of PaS algorithm
-    Found the correct number of layers and upperbound. It represents the lines 6-12 of the Algorithm1 in the cited
+    Find the correct number of layers and upper bound. It represents the lines 6-12 of the Algorithm1 in the cited
     paper.
 
     :param agents: list of tuples containing origins and destinations
-    :param edges: list of OrderedDict containing for each agent (whose identifier is the index of this list) its
-    neighbors
+    :param edges: list of tuples containing for each vertex (whose identifier is the index of this list) its
+     neighbors
     :param upper_bound: the maximum value that interval variables can assume, it represents the maximum makespan
-    possible
-    :param shortest_path:
-    :return True when a plan has been found, optimal upperbound, optimal number of layers, time to build the model,
-     memory usage, number of conflicts and decisions.
+     possible and also the maximum number of layers
+    :param shortest_path: the minimum shortest path
+    :return True when a plan has been found, optimal upper bound, optimal number of layers, time to build the model,
+     memory usage, number of conflicts and decisions
     """
 
     num_layers = 1
