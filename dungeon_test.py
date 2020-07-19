@@ -5,6 +5,14 @@ from solvers.model_smt import run_Z3
 import networkx as nx
 import matplotlib.pyplot as plt
 
+"""
+Run this file to replicate the experiment described in Dungeon subsection of the report.
+This test was performed on a Dungeon graph by considering the following hypotheses:
+- The number of agents must be equal to the number of rooms.
+- There must be only one agent in each room.
+- Each agent's goal is in another room
+"""
+
 ROOM_NUM = 3
 ROOM_SIZE_MIN = 3
 ROOM_SIZE_MAX = 3

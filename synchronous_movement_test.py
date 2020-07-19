@@ -4,6 +4,11 @@ import networkx as nx
 import matplotlib.pyplot as plt
 from solvers.model_smt import run_Z3
 
+"""
+Run this file to replicate the experiment described in Synchronization and collision avoidance subsection of the report.
+This test was performed by considering a graph with a number of nodes equal to the number of agents in order to show
+the possible synchronous movement of agents
+"""
 
 edges = [{0, 1, 2}, {0, 1, 2}, {0, 1, 2}]
 agents = [(0, 1), (1, 2), (2, 0)]
