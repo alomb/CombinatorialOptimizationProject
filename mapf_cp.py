@@ -1,9 +1,6 @@
-import networkx as nx
-import matplotlib.pyplot as plt
-
-from animation import movement_animation
+from utils.animation import movement_animation
 from solvers.model_cp import solving_MAPF, run_CPLEX
-from environments.environments import *
+from utils.environments import *
 
 """
 This file allows to call to a specific graph the CP-based solution based on IBM CPLEX.
@@ -44,9 +41,11 @@ if check:
 else:
     print("Unsatisfiable")
 
+# Comment to not generate gif
 if paths is not None:
     movement_animation(graph, paths, "./resources/warehouse.gif", seed=SEED)
 
+# Uncomment to visualize graph
 """
 nx.draw(graph, with_labels=True)
 plt.show()

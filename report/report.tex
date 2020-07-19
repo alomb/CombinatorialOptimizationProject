@@ -8,6 +8,7 @@
 \usepackage{wrapfig}
 \usepackage{hyperref}
 \usepackage{geometry}
+\usepackage{quoting}
 
 \lstset{
 breakindent=0em,
@@ -49,14 +50,14 @@ linewidth=\textwidth
 % ----------------------------------------------------------------
 \vspace{0.8cm}
 \large University of Bologna\\
-\large Academic Year 2019-2020
+\large Academic Year 2019--2020
 \vfill
 % ----------------------------------------------------------------
 \begin{abstract}
 Multi-Agent Path Finding (MAPF) is a problem with practical implications in several fields: from robotics and self-driving cars to transportation and logistics.
 The task is to find non-conflicting paths for a set of agents given their starting positions and destinations, usually minimizing a cost function.
 There are many variations on the classical problem and many approaches have been proposed.
-In this work we will focus on SAT and CP-based approaches following the paper of R. Barták, J. Švancara and M. Vlk, ``A Scheduling-Based Approach to Multi-Agent Path Finding with Weighted and Capacitated Arcs'', published in Proceedings of the 17th International Conference on Autonomous Agents and MultiAgent Systems~\cite{10.5555/3237383.3237494}.
+In this work we will focus on SAT and CP-based approaches following the paper of R. Bart\'{a}k, J. {\v S}vancara and M. Vlk, ``A Scheduling-Based Approach to Multi-Agent Path Finding with Weighted and Capacitated Arcs'', published in Proceedings of the 17th International Conference on Autonomous Agents and MultiAgent Systems~\cite{10.5555/3237383.3237494}.
 As the authors suggest, this type of problem lends itself particularly well to be formalized using a compact set of constraints and we found interesting to developed as a project for our Combinatorial Decision Making and Optimization course.
 \end{abstract}
 \end{center}
@@ -103,14 +104,14 @@ In this case the problem can be formalized as a search in a global search space,
 \end{itemize}
 
 \subsection*{Our representation}
-Our implementation uses two Python APIs: Z3Py and Docplex.
+Our implementation uses two Python APIs: \textbf{Z3Py} and \textbf{Docplex}.
 For this reason, we are able to use a single encoding of the input data.
 As we are interested in the case of unitary arcs we will represent our graph as a list of sets of integers, or in details, as a list of neighbors.
 The vertices are named by integer values, the same used as indexes in the graph representation.
 Consequently, each element of the list is a set containing the indexes of the neighboring nodes.
 Agents are similarly named by indexes of a list of 2-tuples.
 Each tuple contains origin position and destination of a specific agent.
-To easily manipulate and deploy environments we use the powerful NetworkX library.
+To easily manipulate and deploy environments we use the powerful \textbf{NetworkX} library.
 
 \begin{wrapfigure}[1]{r}{0.65\textwidth}
     \centering
@@ -148,8 +149,12 @@ AGENTS:
 In the original paper the authors introduced a SAT-based approach while this implementation replaces it with a SMT-based one. 
 Satisfiability Modulo Theories (SMT) solvers takes systems in arbitrary format (first-order logic), while SAT solvers are limited to Boolean equations and variables, nevertheless they still mantain the speed and automation of today's Boolean engines.
 The authors of the paper developed their solution using the Picat language, we use the Z3 Solver's Python API: Z3Py.
+\begin{quoting}[font=itshape, begintext={``}, endtext={''\cite{z3_tutorial}}]
+Satisfiability Modulo Theories (SMT) problem is a decision problem for logical formulas with respect to combinations of background theories such as arithmetic, bit-vectors, arrays, and uninterpreted functions.
+Z3 is an efficient SMT solver with specialized algorithms for solving background theories.
+\end{quoting}
 The most difficult part is certainly represented by the constraint modeling and their adaptation for the Z3 Theorem Prover.
-Following the original work, we define the following variables as Z3 Boolean Functions in the file solvers/model\_smt:
+From the original work, we define the following variables as \textbf{Z3 Functions}, or more formally \textbf{Formulas}, in the file solvers/model\_smt:
 
 \begin{itemize}
 \item $\forall x \in V, \forall a \in A, t \in {0, ..., T} : At(x, a, t)$ meaning that agent $a$ is at node $x$ at time step $t$.
@@ -161,7 +166,9 @@ at_ = Function('at', IntSort(), IntSort(), IntSort(), BoolSort())
 pass_ = Function('pass', IntSort(), IntSort(), IntSort(), IntSort(), BoolSort())
 \end{lstlisting}
 
-These variables are the problem unknowns and must be assigned to either true (1) or false (0).
+Variables types in Z3 are called also \textbf{sorts}.
+Standard well-known sorts are \textit{Bool}, \textit{Int} and \textit{Real} but programmers may also define their own types.
+The definition of Z3 Functions specifies the types of the arguments and as the type of the returned value, in this case both \textit{at\_} and \textit{pass\_} are Boolean Functions and can be assigned to either true or false.
 We define as Z3 Integer Functions the following constant representations:
 
 \begin{itemize}
@@ -224,7 +231,9 @@ The model is completed introducing the constraints on the variables:
 \end{split}\label{eq:1.7}\end{equation}
 \end{description}
 
-The correct movements inside the graph are guided by the constraints~\ref{eq:1.5}-\ref{eq:1.7}, nevertheless it is not necessary to specify that each agent must make one and only on movement at a given instant $t$ because the spurious movements introduced by the constraint~\ref{eq:1.7} will never be performed thanks to~\ref{eq:1.5}.
+The correct movements inside the graph are guided by the constraints~\ref{eq:1.5}-\ref{eq:1.7}, nevertheless it is not necessary to specify that each agent must make one and only on movement at a given instant $t$ because the spurious movements introduced by the constraint~\ref{eq:1.6} will never be performed thanks to~\ref{eq:1.5}.
+In particular, a valid solution may contain some true \textit{pass\_} that do not actually belong to the plan because they are simply the result of some unassignments.
+For example in a path-like graph of length 3 where an agent must move from one extreme to the node at the center, there might be a true \textit{pass\_} from the other extreme to the center because both~\ref{eq:1.5} and~\ref{eq:1.6} are respected, but thanks to~\ref{eq:1.5} the agent will be only \textit{at\_} the two correct nodes.
 
 The Z3 implementation is divided in three parts.
 The details of the first one have been described before during variable and constant definitions. 
@@ -264,7 +273,8 @@ s.add([ForAll([x, y, a, t],
                   ))])
 \end{lstlisting}
 
-The variables \textit{x}, \textit{y}, \textit{a} and \textit{t} are Z3 Integer variables, which are bound independently to each \textit{ForAll} expression.
+Universal and existential quantifiers bind variables to the scope of the quantified formula.
+In our case the variables \textit{x}, \textit{y}, \textit{a} and \textit{t} are Z3 Integer variables, which are bound independently to each \textit{ForAll} expression.
 Because \textit{a} is used in the other \textit{ForAll} style constraints it has been similarly bound to a specific interval of integer values outside the shown piece of code.
 \textit{arc\_} is a Boolean Z3 Function used to represent the presence of an arc between a couple of nodes.
 
@@ -372,7 +382,8 @@ As already mentioned the formal representation is very similar to the implementa
 \end{lstlisting}
 
 For this reason we decide to not comment all the constraints.
-Constraints from~\ref{eq:2.1} to~\ref{eq:2.6} are used to constraint the optionality of some specific interval variables like those representing the presence of an agent at the beginning in its starting position or the bonds between \textit{Nin} or \textit{Nout} and \textit{N} to represent that each time an agent, in a specific layer, is in the incoming or outgoing arcs of a vertex (excluding respectively origin and destination), it has to occupy the vertex.
+Constraints from~\ref{eq:2.1} to~\ref{eq:2.4} are used to constraint the optionality of some specific interval variables like those representing the presence of an agent at the beginning in its starting position or at the end in its final position.
+The constraints~\ref{eq:2.5} and~\ref{eq:2.6} bonds the variables \textit{Nin} or \textit{Nout} with \textit{N} to represent that in a specific layer an agent which traverses the incoming or outgoing arcs of a vertex (excluding respectively origin and destination), has to occupy the vertex.
 Timings between \textit{Nin} or \textit{Nout} and \textit{N} are dealt in the constraints~\ref{eq:2.15} and~\ref{eq:2.16}.
 
 \begin{description}\label{eq:equation_set_2.2}
@@ -386,7 +397,9 @@ Timings between \textit{Nin} or \textit{Nout} and \textit{N} are dealt in the co
 
 An interesting and already mentioned constraint is the~\ref{eq:2.7}.
 Similarly to~\ref{eq:2.8} it defines the correct cardinality in which interval variables \textit{Nin}, \textit{A} and \textit{A\_equal} must be bound in the solution.
-In particular, for each activity in the arcs incoming on a specific vertex, for an agent on a given layer there must be at most one traverse, possibly between different layers, if the layer is not the first, or from a neighbor occurring in the same layer.
+The \textit{alternative} function creates an alternative constraint between the passed interval variable and the set of interval variables passed as the second argument.
+If the interval variable is present, then one and only one of the intervals in the set will be selected by the alternative constraint to be present.
+In particular, for each activity in the arcs incoming on a specific vertex, for an agent on a given layer there must be at most one traverse: from the same vertex between different layers (only if the given layer is not the first), or from a neighbor vertex occurring in the same layer.
 To avoid indexes out of bound exceptions a control must be performed on the layer resulting on the possibility of adding a different constraint to the model.
 
 \begin{lstlisting}[label={lst:eq2.7}]
@@ -451,9 +464,9 @@ In the following implementation is easy to observe the difference between \texti
 \end{description}
 
 The constraint~\ref{eq:2.17} represents another interesting case.
-The \textit{no\_overlap} function constrains a set of interval variables not to overlap each others.
-By default (like in the~\ref{eq:2.18} implementation) it can receive a list of interval variables and it will constraint them to not overlap and to be at least distant one to another (the difference between the start of one and end of another, where the former succeeds the latter) zero.
-In order to modify this behavior we pass a \textit{sequence\_var} containing the interval variables and we create a transition matrix which represents for each combination of variables the minimum distance they must maintain.
+The \textit{no\_overlap} function constrains a set of interval variables to not overlap with each other.
+By default (like in the~\ref{eq:2.18}'s implementation) it can receive a list of interval variables and it will constraint them to not overlap and to be at least distant one to another (the difference between the start of one and end of another, where the former succeeds the latter) zero.
+In order to modify this behavior we pass a \textit{sequence\_var} containing the interval variables and we create a \textbf{transition matrix} which represents for each combination of variables the minimum distance they must maintain.
 
 \begin{lstlisting}[label={lst:minimize2}]
 tm_size = num_layers * agents_len
@@ -491,8 +504,9 @@ in particular, we used the following performance parameters:
 \begin{description}
     \item \textit{time\_solving} (both Z3 and CPLEX): measured in seconds.
     \item \textit{memory\_usage} (both Z3 and CPLEX): memory occupied in MB\@.
-    \item \textit{n\_conflicts} (only Z3): indicate assignments that did not the formula true. If the formula can be satified but the number of conflicts is high means that the solver tryed a lot of assignments therefore it didn't proceed in a goal-oriented way.
-    \item \textit{n\_decision} (only Z3): number of decision points.
+    \item \textit{n\_conflicts} (only Z3): indicates assignments that created contradictions.
+If the formula can be satisfied but the number of conflicts is high means that the solver tried a lot of assignments therefore it didn't proceed in a goal-oriented way.
+    \item \textit{n\_decision} (only Z3): number of decisions.
 \end{description}
 
 Let's recall that for the SMT-based approach we used Z3 while we used IBM CP Optimizer for the scheduling approach.
@@ -500,8 +514,8 @@ The latter provides the possibility to perform a parallel search, in this regard
 \subsection{Implementation}\label{subsec:implementation}
 We have used the Python package NetworkX for the creation, manipulation of complex networks.
 This library provides also many standard graph algorithms, like finding an agent's shortest path, which was used in the CP-based approach to compute the optimal number of layers and in the SMT-based approach to compute a lower bound.
-For this purpose we have implemented the solving MAPF algorithm described by R. Barták, J. Švancara and M. Vlk with a little variation:
-we used an heuristic upper bound on the makespan rather than computing it with the Push and Swap (PaS) algorithm and we also used it as upper bound of the number of layers in the search cycle of the first feasible solution.
+For this purpose we have implemented the solving MAPF algorithm described by the authors with a little variation:
+we used an heuristic upper bound on the makespan rather than computing it with the \textbf{Push and Swap (PaS)} algorithm and we also used it as upper bound of the number of layers in the search cycle of the first feasible solution.
 This is because PaS, in addition to the upper bound computation, performs a first check on the existence of a feasible solution to the problem.
 Since we started from an heuristic upper bound, we moved the control of the existence of a solution introducing, in fact, an upper bound also for the number of layers.
 Instead, the SMT-based approach cycle the makespan starting with the makespan equal to the maximum shortest path until a feasible solution is found.
@@ -511,7 +525,7 @@ Finally, a test can be briefly described like this:
 \begin{enumerate}
     \item Graph generation with NetworkX\@.
     \item Agents generation.
-The number of agents may change according to a certain criterion (for example proportional to the number of nodes in the graph) and departure and arrival nodes may be set randomly or manually for each agent.
+The number of agents may change according to a certain criterion (for example proportional to the number of nodes in the graph) while departure and arrival nodes may be set randomly or manually for each agent.
     \item Execution of the resolution algorithms for both approaches described above.
     \item Storage of performance parameters of the two algorithms executed with the optimal parameters.
     \item Depending on the environment, increasing the size of the graph up to a predetermined maximum size.
@@ -526,7 +540,7 @@ This is to evaluate the performance of the two approaches to increasing the the 
 The plot shown in the figure describe the trend of the parameters described above when the size of the graph changes.
 The first consideration is that \textit{time\_solving} and \textit{memory\_usage} increase as the size of the graph, as is easy to expect, however, implementation with CPLEX is faster than Z3 but uses more memory.
 The reason may depend on the is that the former performs a parallel search.
-Another observation that can be made is that the \textit{n\_conflicts} and {n\_decision} grow as the size of the graph increases and therefore of the memory required for the search space as we expected.
+Another observation that can be made is that the \textit{n\_conflicts} and \textit{n\_decision} grow as the size of the graph increases and therefore of the memory required for the search space as we expected.
 \begin{figure}[h!]
 \begin{center}
   \includegraphics[width=16cm]{plot_test.png}\\
@@ -618,7 +632,7 @@ We performed tests on this type of graph starting from these hypotheses:
 \item There must be only one agent in each room.
 \item Each agent's goal is in another room
 \end{itemize}
-We consider this test a very interesting case for the MAPF problem because the agents have to coordinate to use smartly the corridors which can be traversed at most by an agent at a time.
+We consider this test a very interesting case for the MAPF problem because the agents have to coordinate to use smartly the corridors which can be traversed at most by one agent at a time.
 
 \begin{figure}[h!]
 \begin{center}
@@ -660,8 +674,7 @@ Solution with makespan 10:
 Agent 0:        4       1       27      28      17      14      11      10      13      13      13
 Agent 1:        13      12      9       10      13      16      17      29      30      19      22
 Agent 2:        22      19      30      29      29      17      28      27      1       4       4
-\end{lstlisting}
-\nocite{*}
+\end{lstlisting}~\nocite{*}
 \bibliography{bibliography}
 \bibliographystyle{plain}
 

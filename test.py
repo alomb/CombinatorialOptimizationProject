@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 
 from solvers.model_smt import run_Z3
 from solvers.model_cp import run_CPLEX, solving_MAPF
-from environments.environments import *
+from utils.environments import *
 
 MIN_SIZE = 2
 MAX_SIZE = 5
@@ -12,7 +12,7 @@ SEED = 42
 
 def extensive_test(num_agents):
     """
-    Test different environments usually increasing difficulty by means of graph size and number of agents.
+    Test different utils usually increasing difficulty by means of graph size and number of agents.
 
     :param num_agents: the list containing for each graph the number of agents
     :return:

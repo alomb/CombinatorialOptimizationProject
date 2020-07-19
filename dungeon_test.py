@@ -1,9 +1,7 @@
-from animation import movement_animation
-from environments.environments import *
+from utils.animation import movement_animation
+from utils.environments import *
 from solvers.model_cp import solving_MAPF, run_CPLEX
 from solvers.model_smt import run_Z3
-import networkx as nx
-import matplotlib.pyplot as plt
 
 ROOM_NUM = 3
 ROOM_SIZE_MIN = 3

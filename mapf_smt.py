@@ -1,9 +1,6 @@
-import networkx as nx
-import matplotlib.pyplot as plt
-
-from animation import movement_animation
+from utils.animation import movement_animation
 from solvers.model_smt import run_Z3
-from environments.environments import *
+from utils.environments import *
 
 """
 This file allows to call to a specific graph the SMT-based solution based on Z3Py.
@@ -28,10 +25,13 @@ while not check and makespan <= UPPER_BOUND:
 if not check and makespan >= UPPER_BOUND:
     print("Unsatisfiable")
 
+# Comment to not generate gif
+if paths is not None:
+    movement_animation(graph, paths, "./resources/small_grid_2d.gif", seed=SEED)
+
+# Uncomment to visualize graph
 """
 nx.draw(graph, with_labels=True)
 plt.show()
 """
 
-if paths is not None:
-    movement_animation(graph, paths, seed=SEED)

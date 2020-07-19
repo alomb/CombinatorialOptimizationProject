@@ -1,4 +1,4 @@
-from environments.environments import *
+from utils.environments import *
 from solvers.model_cp import solving_MAPF, run_CPLEX
 import networkx as nx
 import matplotlib.pyplot as plt
