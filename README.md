@@ -4,7 +4,7 @@ Solving the Multi-Agent Path Finding (MAPF) problem with Constraint Programming 
 
 &nbsp;
 
-Abstract:
+###### Abstract
 &nbsp;
 
 Multi-Agent Path Finding (MAPF) is a problem with practical implications in several fields: from robotics and self-driving cars to transportation and logistics. The task is to find non-conflicting paths for a set of agents given their starting positions and destinations, usually minimizing a cost function. There are many variations on the classical problem and many approaches have been proposed.
@@ -12,6 +12,7 @@ In this work we will focus on SAT and CP-based approaches following the paper of
 
 &nbsp;
 
+### Setup
 ###### Manual Setup
 Using Python 3.7 or lower. The indicated versions are those used during the development.
 
@@ -35,17 +36,19 @@ To solve locally with docplex IBM CPLEX® Optimization Studio must be installed 
 &nbsp;
 &nbsp;
 
-The folder
-- solvers: contains the models.
-- utils: contains environment.py to handle and generate environments and agents. animations.py to create animations.
-- resources: some animations, the report and the cited paper.
-- report: the report and bibliography in Latex.
+### Where to start
+- solvers/     contains the models in Z3Py and Docplex
+- utils/       contains environment.py to handle and generate environments and agents and animations.py to create animations
+- resources/   some animations, the report and the cited paper
+- report/      the report and bibliography in Latex
 
 &nbsp;
 
 The test files are used to execute different environments.
-Feel free to use the file mapf\_smt.py and mapf\_cp.py to perform personalized experiments.
+Feel free to use the file mapf\_smt.py and mapf\_cp.py to set up personalized experiments using the two approaches seprately.
 
-An example of execution
+&nbsp;
+
+An example of execution on the warehouse environment
 ![Gif not reproducible](resources/warehouse.gif)
 
