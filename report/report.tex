@@ -405,7 +405,7 @@ To avoid indexes out of bound exceptions a control must be performed on the laye
 \begin{lstlisting}[label={lst:eq2.7}]
 [model.add(
 alternative(Nin[vertex][agent][layer],
-            [A_equal[vertex][0][agent][layer - 1]] +
+            [A_equal[vertex][agent][layer - 1]] +
             [A[neighbor][vertex][agent][layer]
              for neighbor in edges[vertex].difference({vertex})]
             if layer > 0 else
